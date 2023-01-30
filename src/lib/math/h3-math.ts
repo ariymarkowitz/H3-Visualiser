@@ -1,4 +1,5 @@
-import Quaternion, { J } from 'quaternion'
+import Quaternion from 'quaternion'
+import { Vector3 } from 'three'
 import * as THREE from 'three'
 import { cadd, cdiv, cmplx, cmul, crmul, csub, cnorm, type CMat, type Complex, cnormsq, cdot } from './complex'
 
@@ -23,15 +24,18 @@ export function applyMobiusComplex(z: Complex, matrix: CMat): Complex {
   return cdiv(cadd(cmul(a, z), b), cadd(cmul(c, z), d))
 }
 
-export function toBall(z: Quaternion) {
-  const w = new Quaternion(z.w, z.x, Math.sqrt(z.y**2+z.z**2), 0)
-  return J.mul(w.sub(J)).div(w.add(J))
+export function toBall(z: Quaternion): Vector3 {
+  const n = z.w*z.w + z.x*z.x
+  const t = z.y*z.y + z.z*z.z
+
+  const norm = n + t + 2*Math.sqrt(t) + 1
+  return new Vector3(z.w*2/norm, -z.x*2/norm, (n + t - 1)/norm)
 }
 
-export function toBallCmplx(z: Complex) {
+export function toBallCmplx(z: Complex): Vector3 {
   const zsq = cnormsq(z)
   const n = zsq+1
-  return new Quaternion(z.re*2/n, -z.im*2/n, (zsq-1)/n)
+  return new Vector3(z.re*2/n, -z.im*2/n, (zsq-1)/n)
 }
 
 export function endsOfGeodesic(a: Quaternion, b: Quaternion): [Complex, Complex] {
@@ -66,10 +70,10 @@ export function geodesic(a: Quaternion, b: Quaternion, divisions: number, arr: n
   const x = toBallCmplx(end1)
   const y = toBallCmplx(end2)
 
-  const mid = x.add(y)
-  if (mid.normSq() < 1e-10) {
-    const p1 = quatToVec3(toBall(a))
-    const p2 = quatToVec3(toBall(b))
+  const mid = x.clone().add(y)
+  if (mid.lengthSq() < 1e-10) {
+    const p1 = toBall(a)
+    const p2 = toBall(b)
 
     const dif = p2.clone().sub(p1).divideScalar(divisions-1)
 
@@ -84,14 +88,14 @@ export function geodesic(a: Quaternion, b: Quaternion, divisions: number, arr: n
     return
   }
 
-  const diff = x.sub(y)
-  const t = diff.div(mid).normSq()
-  const center = mid.mul((1+t)/2)
+  const diff = x.clone().sub(y)
+  const t = diff.lengthSq()/mid.lengthSq()
+  const center = mid.clone().multiplyScalar((1+t)/2)
 
   // Convert points to vectors.
-  const p1 = quatToVec3(toBall(a))
-  const p2 = quatToVec3(toBall(b))
-  const c = quatToVec3(center)
+  const p1 = toBall(a)
+  const p2 = toBall(b)
+  const c = center
 
   const rel1 = p1.clone().sub(c)
   const rel2 = p2.clone().sub(c)

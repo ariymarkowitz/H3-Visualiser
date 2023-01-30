@@ -1,6 +1,6 @@
 import Quaternion from 'quaternion'
 import * as THREE from 'three'
-import { applyMobius, geodesic, quatToVec3, toBall } from './math/h3-math'
+import { applyMobius, geodesic, toBall } from './math/h3-math'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2'
@@ -62,7 +62,7 @@ export class CayleyTree {
 
       const newMat = mmul(mat, this.generators[i])
       const newQuat = applyMobius(this.origin, newMat)
-      const newVertex = quatToVec3(toBall(applyMobius(this.origin, newMat)))
+      const newVertex = toBall(applyMobius(this.origin, newMat))
 
       const size = p.distanceTo(newVertex)
       const subdivisions = Math.floor(Math.min(Math.max(size*100, 2), 10))
