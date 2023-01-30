@@ -66,8 +66,8 @@
     scene.add(axis)
 
     const w = cexp(complex(0, -Math.PI/3))
-    const A = cMatrix(1, 1, 1, w)
-    const B = cMatrix(1, -1, -1, w)
+    // const A = cMatrix(1, 1, 1, w)
+    // const B = cMatrix(1, -1, -1, w)
 
     // const A = cMatrix(1, 2, 0, 1)
     // const B = cMatrix(1, 0, 2, 1)
@@ -75,8 +75,8 @@
     // const A = cMatrix(1, 1.41, 0, 1)
     // const B = cMatrix(1, 0, complex(0, 1.41), 1)
 
-    // const A = cMatrix(1, 2, complex(0, -1), 1)
-    // const B = cMatrix(1, complex(0, 0.48), complex(2, 1), 1)
+    const A = cMatrix(1, 2, complex(0, -1), 1)
+    const B = cMatrix(1, complex(0, 0.7), complex(2, 1), 1)
 
     const tree = new CayleyTree([A, B], 15)
     scene.add(tree.mesh())

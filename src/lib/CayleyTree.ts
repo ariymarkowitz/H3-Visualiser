@@ -1,10 +1,9 @@
-import Quaternion from 'quaternion'
 import * as THREE from 'three'
-import { applyMobius, geodesic, toBall } from './math/h3-math'
+import { mobius, geodesic, toBall } from './math/h3-math'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2'
-import { mId, minv, mIsId, mmul, type CMat } from './math/complex'
+import { mId, minv, mIsId, mmul, quat, vdist, vec3, type CMat, type Quaternion, type Vec3 } from './math/complex'
 
 interface TreeData {
   vertexColors: number[]
@@ -23,7 +22,6 @@ export class CayleyTree {
     0x00ff00, 0x009900,
     0xffff00, 0x999900,
   ]
-  origin = new Quaternion(0, 0, 1, 0)
   minSize = 0.015
 
   constructor(gens: CMat[], depth: number) {
@@ -38,7 +36,7 @@ export class CayleyTree {
       lineColors: [],
       lines: []
     }
-    this._tree(0, 1, undefined, new Quaternion(0, 0, 1, 0), mId(), new THREE.Vector3(0, 0, 1), data)
+    this._tree(0, 1, undefined, quat(0, 0, 1, 0), mId(), vec3(0, 0, 1), data)
 
     const geometry = new LineSegmentsGeometry()
     geometry.setPositions(data.lines)
@@ -53,7 +51,7 @@ export class CayleyTree {
     return lineMesh
   }
 
-  _tree(depth: number, size: number, genN: number | undefined, q: Quaternion, mat: CMat, p: THREE.Vector3, state: TreeData) {
+  _tree(depth: number, size: number, genN: number | undefined, q: Quaternion, mat: CMat, p: Vec3, state: TreeData) {
     if (depth >= this.depth || size < this.minSize) return
     if (depth > 0 && mIsId(mat, 1e-4)) return
 
@@ -61,10 +59,10 @@ export class CayleyTree {
       if (this.inverse(i) === genN) continue
 
       const newMat = mmul(mat, this.generators[i])
-      const newQuat = applyMobius(this.origin, newMat)
-      const newVertex = toBall(applyMobius(this.origin, newMat))
+      const newQuat = mobius(newMat)
+      const newVertex = toBall(mobius(newMat))
 
-      const size = p.distanceTo(newVertex)
+      const size = vdist(p, newVertex)
       const subdivisions = Math.floor(Math.min(Math.max(size*100, 2), 10))
 
       const c = new THREE.Color(this.colors[i]).toArray()
