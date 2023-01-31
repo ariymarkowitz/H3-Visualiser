@@ -20,6 +20,7 @@
   let canvas: HTMLCanvasElement
   let renderer: THREE.WebGLRenderer
   let id: number
+  let listeners: {object: {removeEventListener: Function}, effect: Function}[] = []
 
   const shader = {
     outline: {
@@ -39,6 +40,8 @@
 
   onMount(async () => {
     let dirty = true
+    const setDirty = () => dirty = true
+
     const scene = new THREE.Scene()
     const maskScene = new THREE.Scene()
     const maskScene2 = new THREE.Scene()
@@ -149,11 +152,15 @@
       }
     }
     id = requestAnimationFrame(animate)
-    controls.addEventListener('change', () => dirty = true)
+    controls.addEventListener('change', setDirty)
+    listeners.push({object: controls, effect: setDirty})
   })
 
   onDestroy(async () => {
     if (id) cancelAnimationFrame(id)
+    for (let {object, effect} of listeners) {
+      object.removeEventListener(effect)
+    }
   })
 </script>
 
