@@ -8,7 +8,7 @@ export function cmplx(re: number, im: number): Complex {
 }
 
 export function cmul(a: Complex, b: Complex): Complex {
-  return cmplx(a.re*b.re -a.im * b.im, a.re*b.im +a.im*b.re)
+  return cmplx(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re)
 }
 
 export function conj(z: Complex): Complex {
@@ -32,38 +32,38 @@ export function csum(a: Complex, b: Complex): Complex {
 }
 
 export function cnorm(a: Complex): number {
-  return Math.sqrt(a.re*a.re + a.im*a.im)
+  return Math.sqrt(a.re * a.re + a.im * a.im)
 }
 
 export function cnormsq(a: Complex): number {
-  return a.re*a.re + a.im*a.im
+  return a.re * a.re + a.im * a.im
 }
 
 export function cdot(a: Complex, b: Complex): number {
-  return a.re*b.re + a.im*b.im
+  return a.re * b.re + a.im * b.im
 }
 
 export function cdiv(a: Complex, b: Complex): Complex {
   const n = cnorm(b)
-  return cmplx((a.re*b.re + a.im*b.im)/n, (b.re*a.im-b.im*a.re)/n)
+  return cmplx((a.re * b.re + a.im * b.im) / n, (b.re * a.im - b.im * a.re) / n)
 }
 
 export function crmul(a: Complex, b: number): Complex {
-  return cmplx(a.re*b, a.im*b)
+  return cmplx(a.re * b, a.im * b)
 }
 
 export function crdiv(a: Complex, b: number): Complex {
-  return cmplx(a.re/b, a.im/b)
+  return cmplx(a.re / b, a.im / b)
 }
 
 export function cinv(a: Complex): Complex {
   const n = cnorm(a)
-  return cmplx(a.re/n, a.im/n)
+  return cmplx(a.re / n, a.im / n)
 }
 
 export function cexp(a: Complex): Complex {
   const r = Math.exp(a.re)
-  return cmplx(r*Math.cos(a.im), r*Math.sin(a.im))
+  return cmplx(r * Math.cos(a.im), r * Math.sin(a.im))
 }
 
 export function csqr(a: Complex): Complex {
@@ -160,15 +160,15 @@ export function cMatrix(a1: ComplexConvert, a2: ComplexConvert, a3: ComplexConve
   return [complex(a1), complex(a2), complex(a3), complex(a4)]
 }
 
-export function cIsOne(a: Complex, e=0) {
+export function cIsOne(a: Complex, e = 0) {
   return Math.abs(a.re - 1) <= e && Math.abs(a.im) <= e
 }
 
-export function cIsZero(a: Complex, e=0) {
+export function cIsZero(a: Complex, e = 0) {
   return Math.abs(a.re) <= e && Math.abs(a.im) <= e
 }
 
-export function mIsId(a: CMat, e=0) {
+export function mIsId(a: CMat, e = 0) {
   return cIsOne(a[0], e) && cIsZero(a[1], e) && cIsZero(a[2], e) && cIsOne(a[3], e)
 }
 
@@ -179,7 +179,7 @@ export interface Vec3 {
 }
 
 export function vec3(x: number, y: number, z: number) {
-  return {x, y, z}
+  return { x, y, z }
 }
 
 export function vadd_(a: Vec3, b: Vec3): void {
@@ -189,15 +189,15 @@ export function vadd_(a: Vec3, b: Vec3): void {
 }
 
 export function vadd(a: Vec3, b: Vec3): Vec3 {
-  return vec3(a.x+b.x, a.y+b.y, a.z+b.z)
+  return vec3(a.x + b.x, a.y + b.y, a.z + b.z)
 }
 
 export function vsub(a: Vec3, b: Vec3): Vec3 {
-  return vec3(a.x-b.x, a.y-b.y, a.z-b.z)
+  return vec3(a.x - b.x, a.y - b.y, a.z - b.z)
 }
 
 export function vrmult(a: Vec3, b: number): Vec3 {
-  return vec3(a.x*b, a.y*b, a.z*b)
+  return vec3(a.x * b, a.y * b, a.z * b)
 }
 
 export function vrdiv_(a: Vec3, b: number): Vec3 {
@@ -208,32 +208,32 @@ export function vrdiv_(a: Vec3, b: number): Vec3 {
 }
 
 export function vrdiv(a: Vec3, b: number): Vec3 {
-  return vec3(a.x/b, a.y/b, a.z/b)
+  return vec3(a.x / b, a.y / b, a.z / b)
 }
 
 export function vnorm(v: Vec3): number {
-  return Math.sqrt(v.x*v.x+v.y*v.y+v.z*v.z)
+  return Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
 }
 
 export function vnormsq(v: Vec3): number {
-  return v.x*v.x+v.y*v.y+v.z*v.z
+  return v.x * v.x + v.y * v.y + v.z * v.z
 }
 
 export function vnormalize(v: Vec3): Vec3 {
-  const n = Math.sqrt(v.x*v.x+v.y*v.y+v.z*v.z)
-  return vec3(v.x/n, v.y/n, v.z/n)
+  const n = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
+  return vec3(v.x / n, v.y / n, v.z / n)
 }
 
 export function vdist(a: Vec3, b: Vec3): number {
-  return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2+(a.z-b.z)**2)
+  return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2)
 }
 
 export function vdistsq(a: Vec3, b: Vec3): number {
-  return (a.x-b.x)**2+(a.y-b.y)**2+(a.z-b.z)**2
+  return (a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2
 }
 
 export function vsumsq(a: Vec3, b: Vec3): number {
-  return (a.x+b.x)**2+(a.y+b.y)**2+(a.z+b.z)**2
+  return (a.x + b.x) ** 2 + (a.y + b.y) ** 2 + (a.z + b.z) ** 2
 }
 
 export function vclone(v: Vec3): Vec3 {
@@ -241,11 +241,11 @@ export function vclone(v: Vec3): Vec3 {
 }
 
 export function vdot(a: Vec3, b: Vec3) {
-  return a.x*b.x + a.y*b.y + a.z*b.z
+  return a.x * b.x + a.y * b.y + a.z * b.z
 }
 
 export function vcross(a: Vec3, b: Vec3) {
-  return vec3(a.y*b.z-a.z*b.y, a.z*b.x-a.x*b.z, a.x*b.y-a.y*b.x)
+  return vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x)
 }
 
 export interface Quaternion {
@@ -256,7 +256,7 @@ export interface Quaternion {
 }
 
 export function quat(re: number, i: number, j: number, k: number): Quaternion {
-  return {r: re, i, j, k}
+  return { r: re, i, j, k }
 }
 
 export function qset(q: Quaternion, re: number, i: number, j: number, k: number): void {
@@ -271,11 +271,11 @@ export function cqadd(a: Complex, b: Quaternion) {
 }
 
 export function qnormsq(a: Quaternion) {
-  return a.r*a.r + a.i*a.i + a.j*a.j + a.k*a.k
+  return a.r * a.r + a.i * a.i + a.j * a.j + a.k * a.k
 }
 
 export function qnorm(a: Quaternion) {
-  return Math.sqrt(a.r*a.r + a.i*a.i + a.j*a.j + a.k*a.k)
+  return Math.sqrt(a.r * a.r + a.i * a.i + a.j * a.j + a.k * a.k)
 }
 
 export function qnormalize_(q: Quaternion): void {
@@ -292,7 +292,7 @@ export function qmult(a: Quaternion, b: Quaternion) {
 }
 
 export function qrmul(a: Quaternion, b: number): Quaternion {
-  return quat(a.r * b, a.i*b, a.j*b, a.k*b)
+  return quat(a.r * b, a.i * b, a.j * b, a.k * b)
 }
 
 export function qrdiv_(a: Quaternion, b: number): void {
@@ -305,41 +305,41 @@ export function qrdiv_(a: Quaternion, b: number): void {
 export function qdiv(a: Quaternion, b: Quaternion) {
   const n = qnormsq(b)
   return quat(
-    ( a.r * b.r + a.i * b.i + a.j * b.j + a.k * b.k)/n,
-    (-a.r * b.i + a.i * b.r - a.j * b.k + a.k * b.j)/n,
-    (-a.r * b.j + a.i * b.k + a.j * b.r - a.k * b.i)/n,
-    (-a.r * b.k - a.i * b.j + a.j * b.i + a.k * b.r)/n,
+    (a.r * b.r + a.i * b.i + a.j * b.j + a.k * b.k) / n,
+    (-a.r * b.i + a.i * b.r - a.j * b.k + a.k * b.j) / n,
+    (-a.r * b.j + a.i * b.k + a.j * b.r - a.k * b.i) / n,
+    (-a.r * b.k - a.i * b.j + a.j * b.i + a.k * b.r) / n,
   )
 }
 
-export function qlerp(a: Vec3, b:Vec3, t: number): Quaternion {
+export function qlerp(a: Vec3, b: Vec3, t: number): Quaternion {
   // Get the quaternion that rotates a to b.
   const d = vdot(a, b)
   if (d === 1) return quat(1, 0, 0, 0)
   const v = vcross(a, b)
-  const q = quat(vnorm(a)*vnorm(b) + vdot(a, b), v.x, v.y, v.z)
+  const q = quat(vnorm(a) * vnorm(b) + vdot(a, b), v.x, v.y, v.z)
   qnormalize_(q)
 
-  const theta = Math.acos(q.r)*t
+  const theta = Math.acos(q.r) * t
   const norm = vnorm(v)
-  const s = Math.sin(theta)/norm
-  qset(q, Math.cos(theta), v.x*s, v.y*s, v.z*s)
+  const s = Math.sin(theta) / norm
+  qset(q, Math.cos(theta), v.x * s, v.y * s, v.z * s)
   return q
 }
 
 export function rotate(a: Vec3, q: Quaternion): Vec3 {
-  const qii = q.i*q.i
-  const qjj = q.j*q.j
-  const qkk = q.k*q.k
-  const qri = q.r*q.i
-  const qrj = q.r*q.j
-  const qrk = q.r*q.k
-  const qik = q.i*q.k
-  const qij = q.i*q.j
-  const qjk = q.j*q.k
+  const qii = q.i * q.i
+  const qjj = q.j * q.j
+  const qkk = q.k * q.k
+  const qri = q.r * q.i
+  const qrj = q.r * q.j
+  const qrk = q.r * q.k
+  const qik = q.i * q.k
+  const qij = q.i * q.j
+  const qjk = q.j * q.k
   return vec3(
-    a.x*(1-2*(qjj+qkk)) + a.y*2*(qij-qrk) + a.z*2*(qik+qrj),
-    a.x*2*(qij+qrk) + a.y*(1-2*(qii+qkk)) + a.z*2*(qjk-qri),
-    a.x*2*(qik-qrj) + a.y*2*(qjk+qri) + a.z*(1-2*(qii+qjj)),
+    a.x * (1 - 2 * (qjj + qkk)) + a.y * 2 * (qij - qrk) + a.z * 2 * (qik + qrj),
+    a.x * 2 * (qij + qrk) + a.y * (1 - 2 * (qii + qkk)) + a.z * 2 * (qjk - qri),
+    a.x * 2 * (qik - qrj) + a.y * 2 * (qjk + qri) + a.z * (1 - 2 * (qii + qjj)),
   )
 }

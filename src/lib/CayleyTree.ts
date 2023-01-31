@@ -63,12 +63,12 @@ export class CayleyTree {
       const newVertex = toBall(mobius(newMat))
 
       const size = vdist(p, newVertex)
-      const subdivisions = Math.floor(Math.min(Math.max(size*100, 2), 10))
+      const subdivisions = Math.floor(Math.min(Math.max(size * 100, 2), 10))
 
       const c = new THREE.Color(this.colors[i]).toArray()
       state.vertexColors.push(c[0], c[1], c[2])
       state.vertices.push(newVertex.x, newVertex.y, newVertex.z)
-      for (let i=0; i<subdivisions*2-2; i++) {
+      for (let i = 0; i < subdivisions * 2 - 2; i++) {
         state.lineColors.push(c[0], c[1], c[2])
       }
       geodesic(q, newQuat, subdivisions, state.lines)
