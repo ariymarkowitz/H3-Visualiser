@@ -64,7 +64,7 @@
 
     const controls = new TrackballControls(camera, renderer.domElement)
     controls.noPan = true
-    controls.rotateSpeed = 5
+    controls.rotateSpeed = 2
 
     // const light = new THREE.DirectionalLight(0xffffff)
     // light.position.set(1, 1, 1)
