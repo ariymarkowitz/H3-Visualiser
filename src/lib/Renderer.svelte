@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { browser } from '$app/environment'
   import { onMount, onDestroy } from 'svelte'
   import * as THREE from 'three'
   import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls'
@@ -11,7 +12,12 @@
   import * as cmath from './math/complex'
   import { cexp, cinv, cMatrix, cmul, cneg, complex, crmul } from './math/complex'
 
-  let container: HTMLElement
+  export let width: number
+  export let height: number
+
+  let dpr = browser ? window.devicePixelRatio : 1
+
+  let canvas: HTMLCanvasElement
   let renderer: THREE.WebGLRenderer
   let id: number
 
@@ -32,6 +38,7 @@
   }
 
   onMount(async () => {
+    let dirty = true
     const scene = new THREE.Scene()
     const maskScene = new THREE.Scene()
     const maskScene2 = new THREE.Scene()
@@ -39,17 +46,16 @@
 
     const camera = new THREE.PerspectiveCamera(
       45,
-      window.innerWidth / window.innerHeight,
+      width / height,
       0.1,
       1000
     )
     camera.position.set(0, 3, 0)
     camera.up.set(1, 0, 0)
 
-    renderer = new THREE.WebGLRenderer({ antialias: true })
-    renderer.setSize(window.innerWidth, window.innerHeight)
-    renderer.setPixelRatio(window.devicePixelRatio)
-    container.appendChild(renderer.domElement)
+    renderer = new THREE.WebGLRenderer({ antialias: true, canvas })
+    renderer.setSize(width, height, false)
+    renderer.setPixelRatio(dpr)
     renderer.setClearColor(0xffffff)
     renderer.autoClear = false
 
@@ -81,7 +87,7 @@
     // const A = cMatrix(1, 1.2720196, 0, 1)
     // const B = cMatrix(1, 0, complex(0, 1.2720196), 1)
 
-    const tree = new CayleyTree([A, B], 15)
+    const tree = new CayleyTree([A, B], 15, width, height)
     scene.add(tree.mesh())
 
     // # shaded model
@@ -136,16 +142,24 @@
     function animate() {
       id = requestAnimationFrame(animate)
       controls.update()
-      composer.render()
-      matShader.uniforms.offset.value = 0.003 * camera.position.length()
+      if (dirty) {
+        matShader.uniforms.offset.value = 0.003 * camera.position.length()
+        composer.render()
+        dirty = false
+      }
     }
     id = requestAnimationFrame(animate)
+    controls.addEventListener('change', () => dirty = true)
   })
 
   onDestroy(async () => {
     if (id) cancelAnimationFrame(id)
-    if (container) container.removeChild(renderer.domElement)
   })
 </script>
 
-<div bind:this={container} />
+<canvas class='tree-canvas'
+  style={`width: 100%; max-width: ${width}px; max-height: ${height}px`}
+  bind:this={canvas}
+  width={width*dpr}
+  height={height*dpr}
+></canvas>

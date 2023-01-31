@@ -13,6 +13,8 @@ interface TreeData {
 }
 
 export class CayleyTree {
+  width: number
+  height: number
   generators: CMat[]
   depth: number
 
@@ -24,7 +26,9 @@ export class CayleyTree {
   ]
   minSize = 0.015
 
-  constructor(gens: CMat[], depth: number) {
+  constructor(gens: CMat[], depth: number, width: number, height: number) {
+    this.width = width
+    this.height = height
     this.generators = gens.map(g => [g, minv(g)]).flat()
     this.depth = depth
   }
@@ -44,7 +48,7 @@ export class CayleyTree {
     const material = new LineMaterial({
       vertexColors: true,
       linewidth: 2, // px
-      resolution: new THREE.Vector2(window.innerWidth, window.innerHeight),
+      resolution: new THREE.Vector2(this.width, this.height),
       worldUnits: false
     })
     const lineMesh = new LineSegments2(geometry, material)
