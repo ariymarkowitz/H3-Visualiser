@@ -182,32 +182,32 @@ export function vec3(x: number, y: number, z: number) {
   return {x, y, z}
 }
 
-export function vadd(a: Vec3, b: Vec3): void {
+export function vadd_(a: Vec3, b: Vec3): void {
   a.x += b.x
   a.y += b.y
   a.z += b.z
 }
 
-export function vadd2(a: Vec3, b: Vec3): Vec3 {
+export function vadd(a: Vec3, b: Vec3): Vec3 {
   return vec3(a.x+b.x, a.y+b.y, a.z+b.z)
 }
 
-export function vsub2(a: Vec3, b: Vec3): Vec3 {
+export function vsub(a: Vec3, b: Vec3): Vec3 {
   return vec3(a.x-b.x, a.y-b.y, a.z-b.z)
 }
 
-export function vrmult2(a: Vec3, b: number): Vec3 {
+export function vrmult(a: Vec3, b: number): Vec3 {
   return vec3(a.x*b, a.y*b, a.z*b)
 }
 
-export function vrdiv(a: Vec3, b: number): Vec3 {
+export function vrdiv_(a: Vec3, b: number): Vec3 {
   a.x /= b
   a.y /= b
   a.z /= b
   return a
 }
 
-export function vrdiv2(a: Vec3, b: number): Vec3 {
+export function vrdiv(a: Vec3, b: number): Vec3 {
   return vec3(a.x/b, a.y/b, a.z/b)
 }
 
@@ -217,6 +217,11 @@ export function vnorm(v: Vec3): number {
 
 export function vnormsq(v: Vec3): number {
   return v.x*v.x+v.y*v.y+v.z*v.z
+}
+
+export function vnormalize(v: Vec3): Vec3 {
+  const n = Math.sqrt(v.x*v.x+v.y*v.y+v.z*v.z)
+  return vec3(v.x/n, v.y/n, v.z/n)
 }
 
 export function vdist(a: Vec3, b: Vec3): number {
@@ -254,11 +259,14 @@ export function quat(re: number, i: number, j: number, k: number): Quaternion {
   return {r: re, i, j, k}
 }
 
-export function cqadd(a: Complex, b: Quaternion) {
-  return quat(a.re + b.r, a.im + b.i, b.j, b.k)
+export function qset(q: Quaternion, re: number, i: number, j: number, k: number): void {
+  q.r = re
+  q.i = i
+  q.j = j
+  q.k = k
 }
 
-export function cjmult(a: Complex, b: Quaternion) {
+export function cqadd(a: Complex, b: Quaternion) {
   return quat(a.re + b.r, a.im + b.i, b.j, b.k)
 }
 
@@ -270,6 +278,10 @@ export function qnorm(a: Quaternion) {
   return Math.sqrt(a.r*a.r + a.i*a.i + a.j*a.j + a.k*a.k)
 }
 
+export function qnormalize_(q: Quaternion): void {
+  qrdiv_(q, qnorm(q))
+}
+
 export function qmult(a: Quaternion, b: Quaternion) {
   return quat(
     a.r * b.r - a.i * b.i - a.j * b.j - a.k * b.k,
@@ -277,6 +289,10 @@ export function qmult(a: Quaternion, b: Quaternion) {
     a.r * b.j - a.i * b.k + a.j * b.r + a.k * b.i,
     a.r * b.k + a.i * b.j - a.j * b.i + a.k * b.r,
   )
+}
+
+export function qrmul(a: Quaternion, b: number): Quaternion {
+  return quat(a.r * b, a.i*b, a.j*b, a.k*b)
 }
 
 export function qrdiv_(a: Quaternion, b: number): void {
@@ -297,13 +313,18 @@ export function qdiv(a: Quaternion, b: Quaternion) {
 }
 
 export function qlerp(a: Vec3, b:Vec3, t: number): Quaternion {
+  // Get the quaternion that rotates a to b.
   const d = vdot(a, b)
   if (d === 1) return quat(1, 0, 0, 0)
   const v = vcross(a, b)
-  const theta = Math.acos(vnormsq(a)*vnormsq(b)/vdot(a, b))*t
+  const q = quat(vnorm(a)*vnorm(b) + vdot(a, b), v.x, v.y, v.z)
+  qnormalize_(q)
+
+  const theta = Math.acos(q.r)*t
   const norm = vnorm(v)
   const s = Math.sin(theta)/norm
-  return quat(Math.cos(theta), v.x/s, v.y/s, v.z/s)
+  qset(q, Math.cos(theta), v.x*s, v.y*s, v.z*s)
+  return q
 }
 
 export function rotate(a: Vec3, q: Quaternion): Vec3 {
@@ -319,6 +340,6 @@ export function rotate(a: Vec3, q: Quaternion): Vec3 {
   return vec3(
     a.x*(1-2*(qjj+qkk)) + a.y*2*(qij-qrk) + a.z*2*(qik+qrj),
     a.x*2*(qij+qrk) + a.y*(1-2*(qii+qkk)) + a.z*2*(qjk-qri),
-    a.x*2*(qik-qrj) + a.y*2*(qjk-qri) + a.z*(1-2*(qii+qjj)),
+    a.x*2*(qik-qrj) + a.y*2*(qjk+qri) + a.z*(1-2*(qii+qjj)),
   )
 }
