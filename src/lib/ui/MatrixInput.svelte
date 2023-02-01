@@ -1,14 +1,15 @@
 <script lang='ts'>
-import RationalInput from "./RationalInput.svelte";
+import type { CMat, Complex } from "$lib/math/complex"
+import RealInput from "./ComplexInput.svelte";
 
-export let state: [number, number][][] | undefined = undefined
-let state00: [number, number] | undefined
-let state01: [number, number] | undefined
-let state10: [number, number] | undefined
-let state11: [number, number] | undefined
+export let state: CMat | undefined = undefined
+let state00: Complex | undefined
+let state01: Complex | undefined
+let state10: Complex | undefined
+let state11: Complex | undefined
 
 $: if (state00 && state01 && state10 && state11) {
-  state = [[state00, state10], [state01, state11]]
+  state = [state00, state01, state10, state11]
 } else {
   state = undefined
 }
@@ -16,9 +17,9 @@ $: if (state00 && state01 && state10 && state11) {
 
 <div class='matrix-input-container'>
   <div class="matrix-input">
-    <RationalInput bind:state={state00} emptyIsZero={true}/>
-    <RationalInput bind:state={state01} emptyIsZero={true}/>
-    <RationalInput bind:state={state10} emptyIsZero={true}/>
-    <RationalInput bind:state={state11} emptyIsZero={true}/>
+    <RealInput bind:state={state00}/>
+    <RealInput bind:state={state01}/>
+    <RealInput bind:state={state10}/>
+    <RealInput bind:state={state11}/>
   </div>
 </div>

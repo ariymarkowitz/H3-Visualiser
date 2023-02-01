@@ -70,6 +70,14 @@ export function csqr(a: Complex): Complex {
   return cmul(a, a)
 }
 
+export function cIsOne(a: Complex, e = 0) {
+  return Math.abs(a.re - 1) <= e && Math.abs(a.im) <= e
+}
+
+export function cIsZero(a: Complex, e = 0) {
+  return Math.abs(a.re) <= e && Math.abs(a.im) <= e
+}
+
 export type CMat = [Complex, Complex, Complex, Complex]
 
 export function cmatrix(a: Complex, b: Complex, c: Complex, d: Complex) {
@@ -117,6 +125,10 @@ export function det(a: CMat): Complex {
   return csub(cmul(a[0], a[3]), cmul(a[1], a[2]))
 }
 
+export function mIsSingular(a: CMat): boolean {
+  return cnorm(det(a)) < 1e-10
+}
+
 export function minv(a: CMat): CMat {
   const d = det(a)
   return [cdiv(a[3], d), cdiv(cneg(a[1]), d), cdiv(cneg(a[2]), d), cdiv(a[0], d)]
@@ -158,14 +170,6 @@ export function complex(n: ComplexConvert | number[], m?: number) {
 
 export function cMatrix(a1: ComplexConvert, a2: ComplexConvert, a3: ComplexConvert, a4: ComplexConvert): CMat {
   return [complex(a1), complex(a2), complex(a3), complex(a4)]
-}
-
-export function cIsOne(a: Complex, e = 0) {
-  return Math.abs(a.re - 1) <= e && Math.abs(a.im) <= e
-}
-
-export function cIsZero(a: Complex, e = 0) {
-  return Math.abs(a.re) <= e && Math.abs(a.im) <= e
 }
 
 export function mIsId(a: CMat, e = 0) {

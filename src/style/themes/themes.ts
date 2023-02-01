@@ -14,6 +14,8 @@ export interface Theme {
   },
   canvas: {
     foreground: string,
+    isometry1Color: string,
+    isometry2Color: string,
   }
 }
 
@@ -27,6 +29,8 @@ export const themeCSS = derived(
     borderColor: $theme.ui.border,
     focusBorderColor: $theme.ui.focusBorder,
     textColor: $theme.ui.textColor,
-    thickBorderColor: $theme.ui.thickBorder
+    thickBorderColor: $theme.ui.thickBorder,
+    isometry1Color: $theme.canvas.isometry1Color,
+    isometry2Color: $theme.canvas.isometry2Color
   })
 )

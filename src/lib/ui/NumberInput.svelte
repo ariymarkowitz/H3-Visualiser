@@ -71,7 +71,7 @@
     }
   }
 
-  function validateInput(e) {
+  function validateInput(e: any) {
     const input = e.target.value
     if (!setRaw(input)) {
       e.target.value = value
