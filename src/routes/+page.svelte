@@ -7,6 +7,7 @@
   import { variables } from 'svelte-styling'
     import { mIsSingular, type CMat } from '$lib/math/complex'
     import { browser } from '$app/environment'
+    import PlaneInput from '$lib/ui/PlaneInput.svelte'
 
   let currentTheme: string = 'Light'
   $: {
@@ -24,7 +25,8 @@
 
   let gens: CMat[] = []
   $: {
-    gens = [mat1input, mat2input].filter((m, i): m is CMat => m !== undefined && !mIsSingular(m))
+    const show = [showiso1, showiso2]
+    gens = [mat1input, mat2input].filter((m, i): m is CMat => m !== undefined && !mIsSingular(m) && show[i])
     console.log(gens)
   }
 
@@ -54,6 +56,10 @@
         <MatrixInput bind:state={mat2input} />
         <Latex text="\left.\rule{'{'}0cm{'}'}{'{'}3em{'}'}\right]" />
       </div>
+    </div>
+    <div class="sidebar-row">
+      <div class="spacer" />
+      <PlaneInput />
     </div>
   </div>
 </div>

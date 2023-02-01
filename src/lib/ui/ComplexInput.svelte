@@ -43,7 +43,7 @@
     }
     if (g.has_imag2) {
       const im_sign = g.im_sign2 === '-' ? -1 : 1
-      if (!g.im) return complex (0, im_sign)
+      if (!g.im2) return complex (0, im_sign)
       const im = im_sign*parseFloat(g.im2) || 0
       return complex(0, im)
     }
