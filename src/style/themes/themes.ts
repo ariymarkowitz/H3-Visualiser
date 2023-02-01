@@ -1,7 +1,7 @@
 import { derived, writable } from 'svelte/store';
 
-import darkTheme from './dark'
-import lightTheme from './light'
+import darkTheme from './dark';
+import lightTheme from './light';
 
 export interface Theme {
   name: string,

@@ -1,9 +1,9 @@
 import * as THREE from 'three'
-import { mobius, geodesic, toBall } from './math/h3-math'
-import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2'
+import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry'
 import { mId, minv, mIsId, mmul, quat, vdist, vec3, type CMat, type Quaternion, type Vec3 } from './math/complex'
+import { geodesic, mobius, toBall } from './math/h3-math'
 
 interface TreeData {
   vertexColors: number[]

@@ -1,4 +1,4 @@
-import { type Updater, writable } from "svelte/store"
+import { writable, type Updater } from "svelte/store"
 
 export interface Cacheable<T> {
   subscribe(updater: Updater<T>): void

@@ -1,15 +1,15 @@
-<script lang='ts' context='module'>
-  export type ChangeEvent = CustomEvent<{state: number}>
+<script lang="ts" context="module">
+  export type ChangeEvent = CustomEvent<{ state: number }>
 </script>
 
-<script lang='ts'>
-  import { createEventDispatcher } from "svelte"
+<script lang="ts">
+  import { createEventDispatcher } from 'svelte'
 
   const dispatch = createEventDispatcher()
 
   export let min: number = 1
   export let max: number = 100
-  export let valid: (n: number) => boolean = n => true
+  export let valid: (n: number) => boolean = (n) => true
   export let init: number = min
 
   // The numeric state of the field.
@@ -25,7 +25,7 @@
     if (state !== n) {
       dispatch('change', {
         state: n
-      });
+      })
       state = n
       value = n.toString()
     }
@@ -37,7 +37,7 @@
       if (isValidValue(v)) {
         dispatch('change', {
           state: Number(v)
-        });
+        })
         state = Number(v)
       }
       return true
@@ -52,7 +52,7 @@
   $: if (value !== '') {
     incrementState = Number(value)
   }
-  
+
   function increment() {
     for (let i = incrementState + 1; i <= max; i++) {
       if (valid(i)) {
@@ -82,7 +82,7 @@
     if (input === '') return true
     if (/^(0|[1-9]\d*)$/.test(input)) {
       const intInput = Number(input)
-      if ((min <= 0 || intInput > 0 ) && intInput <= max) return true
+      if ((min <= 0 || intInput > 0) && intInput <= max) return true
     }
     return false
   }
@@ -94,10 +94,10 @@
   }
 </script>
 
-<div class='number-input'>
-  <input type='text' bind:value={input} on:input|preventDefault={validateInput}/>
-  <div class='number-input-buttons'>
-    <div class='number-input-up' on:click={increment}><i></i></div>
-    <div class='number-input-down' on:click={decrement}><i></i></div>
+<div class="number-input">
+  <input type="text" bind:value={input} on:input|preventDefault={validateInput} />
+  <div class="number-input-buttons">
+    <div class="number-input-up" on:click={increment}><i /></div>
+    <div class="number-input-down" on:click={decrement}><i /></div>
   </div>
 </div>

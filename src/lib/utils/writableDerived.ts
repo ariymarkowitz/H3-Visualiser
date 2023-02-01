@@ -10,10 +10,10 @@ export function writableDerived<T, U>(
       store.set(convertFrom(value))
     },
     update(updater) {
-        store.update((n) => {
-          const value = updater(convertTo(n))
-          return convertFrom(value)
-        })
+      store.update((n) => {
+        const value = updater(convertTo(n))
+        return convertFrom(value)
+      })
     },
     subscribe(run, invalidate) {
       return store.subscribe((value) => {
