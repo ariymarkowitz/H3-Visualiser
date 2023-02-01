@@ -55,7 +55,7 @@ export function geodesic(a: Quaternion, b: Quaternion, divisions: number, arr: n
 
   const mid = vadd(x, y)
   const midn = vnormsq(mid)
-  if (midn < 1e-10) {
+  if (isNaN(midn) || midn < 1e-10) {
     const step = vrdiv_(vsub(p2, p1), divisions - 1)
 
     arr.push(p1.x, p1.y, p1.z)
