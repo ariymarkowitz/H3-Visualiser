@@ -8,7 +8,7 @@ export default {
     thickBorder: '#fff',
   },
   canvas: {
-    foreground: '#bbbbbb',
+    foreground: '#aaaaaa',
     isometryColors: [
       ['#ff0000', '#ff6666'],
       ['#3366ff', '#5588ff'],

@@ -76,7 +76,7 @@
     width: 270px;
     height: 270px;
 
-    border: 2px solid var(--borderColor);
+    border: 2px solid var(--thickBorderColor);
     position: relative;
 
     .plane-input-point {
