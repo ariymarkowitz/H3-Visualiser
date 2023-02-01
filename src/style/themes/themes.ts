@@ -14,12 +14,11 @@ export interface Theme {
   },
   canvas: {
     foreground: string,
-    isometry1Color: string,
-    isometry2Color: string,
+    isometryColors: string[][]
   }
 }
 
-export const themes: Theme[] = [darkTheme, lightTheme]
+export const themes: Theme[] = [lightTheme, darkTheme]
 
 export const theme = writable(themes[0])
 export const themeCSS = derived(
@@ -30,7 +29,7 @@ export const themeCSS = derived(
     focusBorderColor: $theme.ui.focusBorder,
     textColor: $theme.ui.textColor,
     thickBorderColor: $theme.ui.thickBorder,
-    isometry1Color: $theme.canvas.isometry1Color,
-    isometry2Color: $theme.canvas.isometry2Color
+    isometry1Color: $theme.canvas.isometryColors[0][0],
+    isometry2Color: $theme.canvas.isometryColors[1][0]
   })
 )

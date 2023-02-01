@@ -18,19 +18,15 @@ export class CayleyTree {
   generators: CMat[]
   depth: number
 
-  colors: THREE.ColorRepresentation[] = [
-    0xff0000, 0x990000,
-    0x0000ff, 0x000099,
-    0x00ff00, 0x009900,
-    0xffff00, 0x999900,
-  ]
+  colors: THREE.Color[] = []
   minSize = 0.015
 
-  constructor(gens: CMat[], depth: number, width: number, height: number) {
+  constructor(gens: CMat[], colors: THREE.Color[], depth: number, width: number, height: number) {
     this.width = width
     this.height = height
     this.generators = gens.map(g => [g, minv(g)]).flat()
     this.depth = depth
+    this.colors = colors
   }
 
   mesh() {

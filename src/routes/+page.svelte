@@ -10,12 +10,13 @@
   import PlaneInput, { type Point } from '$lib/ui/PlaneInput.svelte'
   import type { Writable } from 'svelte/store'
   import type ComplexInput from '$lib/ui/ComplexInput.svelte'
+  import { Color } from 'three'
 
-  let currentTheme: string = 'Light'
-  $: {
-    const newTheme = themes.find((t) => t.name === currentTheme) || themes[0]
-    theme.set(newTheme)
-  }
+  let themeInput: string
+	$: {
+		const newTheme = themes.find(t => t.name === themeInput) || themes[0]
+		theme.set(newTheme)
+	}
 
   let depth: number
 
@@ -26,9 +27,15 @@
   let showiso2: boolean = true
 
   let gens: CMat[] = []
+  let colors: Color[] = []
   $: {
     const show = [showiso1, showiso2]
-    gens = [mat1input, mat2input].filter((m, i): m is CMat => m !== undefined && !mIsSingular(m) && show[i])
+    const rawColors = [$theme.canvas.isometryColors[0], $theme.canvas.isometryColors[1]]
+    const matInputs = [mat1input, mat2input]
+    const values = [0, 1].map(i => ({m: matInputs[i], c: rawColors[i]}))
+      .filter((x, i) => x.m !== undefined && !mIsSingular(x.m) && show[i])
+    gens = values.map(x => x.m as CMat)
+    colors = values.map(x => x.c.map(c => new Color(c))).flat()
   }
 
   let focus: {element: ComplexInput, state?: Complex}
@@ -51,7 +58,7 @@
 <div class="container">
   <div class="render-container">
     {#if browser}
-    <Renderer width={800} height={800} gens={gens} depth={depth}/>
+    <Renderer width={800} height={800} gens={gens} colors={colors} depth={depth}/>
     {/if}
   </div>
   <div class="sidebar">
@@ -76,6 +83,13 @@
       <div class="centering">
         <PlaneInput bind:pos={planeInputPos} on:change={planeInputChanged}/>
       </div>
+    </div>
+    <div class="sidebar-row">
+      Theme <select bind:value={themeInput}>
+        {#each Object.values(themes) as theme, _}
+          <option>{theme.name}</option>
+        {/each}
+      </select>
     </div>
   </div>
 </div>

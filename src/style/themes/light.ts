@@ -9,7 +9,9 @@ export default {
   },
   canvas: {
     foreground: '#000000',
-    isometry1Color: '#f00',
-    isometry2Color: '#00f',
+    isometryColors: [
+      ['#ff0000', '#cc0000'],
+      ['#0000ff', '#0000cc'],
+    ]
   }
 }

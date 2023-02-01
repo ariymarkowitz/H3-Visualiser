@@ -8,8 +8,10 @@ export default {
     thickBorder: '#fff',
   },
   canvas: {
-    foreground: '#bbb',
-    isometry1Color: '#f00',
-    isometry2Color: '#0f0',
+    foreground: '#bbbbbb',
+    isometryColors: [
+      ['#ff0000', '#ff6666'],
+      ['#3366ff', '#5588ff'],
+    ]
   }
 }

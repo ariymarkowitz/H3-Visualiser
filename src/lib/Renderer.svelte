@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { browser } from '$app/environment'
   import { onMount } from 'svelte'
   import * as THREE from 'three'
   import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls'
@@ -8,13 +7,15 @@
   import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
   import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass'
   import { CopyShader } from 'three/examples/jsm/shaders/CopyShader'
+  import { theme } from '../style/themes/themes'
   import { CayleyTree } from './CayleyTree'
-  import { cexp, cMatrix, complex, type CMat } from './math/complex'
+  import { type CMat } from './math/complex'
 
   export let width: number
   export let height: number
   export let depth: number
   export let gens: CMat[] = []
+  export let colors: THREE.Color[] = []
 
   let dpr = window.devicePixelRatio
 
@@ -22,9 +23,15 @@
   let renderer: THREE.WebGLRenderer
   let id: number
 
-  let setMesh: (gens: CMat[], depth: number, width: number, height: number) => void
+  let setMesh: (
+    gens: CMat[],
+    colors: THREE.Color[],
+    depth: number,
+    width: number,
+    height: number
+  ) => void
 
-  $: if (setMesh) setMesh(gens, depth, width, height)
+  $: if (setMesh) setMesh(gens, colors, depth, width, height)
 
   onMount(() => {
     let dirty = true
@@ -40,7 +47,7 @@
           '}'
         ].join('\n'),
 
-        fragment_shader: ['void main(){', 'gl_FragColor = vec4( 0.0, 0.0, 0.0, 1.0 );', '}'].join(
+        fragment_shader: ['uniform vec4 color;', 'void main(){', 'gl_FragColor = color;', '}'].join(
           '\n'
         )
       }
@@ -50,6 +57,10 @@
     renderer.setSize(width, height, false)
     renderer.setPixelRatio(dpr)
     renderer.setClearColor(0xffffff)
+    theme.subscribe((newTheme) => {
+      renderer.setClearColor(newTheme.ui.background)
+      setDirty()
+    })
     renderer.autoClear = false
 
     const scene = new THREE.Scene()
@@ -73,21 +84,9 @@
     axis.setColors(new THREE.Color(0xff9999), new THREE.Color(0x66ff66), new THREE.Color(0x9999ff))
     scene.add(axis)
 
-    const w = cexp(complex(0, -Math.PI / 3))
-    const A = cMatrix(1, 1, 1, w)
-    const B = cMatrix(1, -1, -1, w)
-
-    // const A = cMatrix(1, 2, 0, 1)
-    // const B = cMatrix(1, 0, 2, 1)
-
-    // const A = cMatrix(1, 1.41, 0, 1)
-    // const B = cMatrix(1, 0, complex(0, 1.41), 1)
-
-    // const A = cMatrix(1, 2, complex(0, -1), 1)
-    // const B = cMatrix(1, complex(0, 0.6), complex(2, 1), 1)
-
-    // const A = cMatrix(1, 1.2720196, 0, 1)
-    // const B = cMatrix(1, 0, complex(0, 1.2720196), 1)
+    // const w = cexp(complex(0, -Math.PI / 3))
+    // const A = cMatrix(1, 1, 1, w)
+    // const B = cMatrix(1, -1, -1, w)
 
     let mesh: THREE.Mesh | undefined
 
@@ -103,6 +102,9 @@
       offset: {
         type: 'f',
         value: 0.01
+      },
+      color: {
+        value: new THREE.Vector4(0, 0, 0, 1)
       }
     }
 
@@ -112,6 +114,12 @@
       uniforms: uniforms,
       vertexShader: outShader.vertex_shader,
       fragmentShader: outShader.fragment_shader
+    })
+    theme.subscribe((newTheme) => {
+      const c = new THREE.Color(newTheme.canvas.foreground)
+      matShader.uniforms.color.value = [c.r, c.g, c.b, 1]
+      matShader.needsUpdate = true
+      setDirty()
     })
 
     const outlineMesh = new THREE.Mesh(sphereGeo, matShader)
@@ -153,11 +161,11 @@
     id = requestAnimationFrame(animate)
     controls.addEventListener('change', setDirty)
 
-    setMesh = (gens, depth, width, height) => {
+    setMesh = (gens, colors, depth, width, height) => {
       if (mesh) {
         scene.remove(mesh)
       }
-      const tree = new CayleyTree(gens, depth, width, height)
+      const tree = new CayleyTree(gens, colors, depth, width, height)
       mesh = tree.mesh()
       scene.add(mesh)
       setDirty()
