@@ -1,5 +1,6 @@
 <script lang='ts'>
-    import { complex, type Complex } from "$lib/math/complex"
+  import { complex, type Complex } from "$lib/math/complex"
+  import { createEventDispatcher } from "svelte"
 
 
   const partialMatch: RegExp = /^\s*([+-]?\s*(\d+(\.\d*)?|\.\d+)?)?\s*([+-]?\s*(\d+(\.\d*)?|\.\d+)?i?)?\s*$/
@@ -9,6 +10,11 @@
   export let value: string = ''
   // The numeric state of the field.
   export let state: Complex = parse(value)
+
+  export function setState(z: Complex) {
+    state = z
+    value = `${z.re.toFixed(2)}${z.im >= 0 ? '+' : '-'}${Math.abs(z.im).toFixed(2)}i`
+  }
 
   let input: string
   $: input = value
@@ -49,6 +55,11 @@
     }
     return complex(0)
   }
+
+  const dispatch = createEventDispatcher()
+  function focus() {
+    dispatch('focus')
+  }
 </script>
 
-<input type='text' bind:value={input} on:input|preventDefault={validateInput}/>
+<input type='text' bind:value={input} on:input|preventDefault={validateInput} on:focus={focus} />

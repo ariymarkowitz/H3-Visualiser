@@ -1,12 +1,38 @@
+<script lang="ts" context="module">
+  export interface Point {
+    x: number
+    y: number
+  }
+</script>
 <script lang="ts">
-    import { browser } from "$app/environment"
-    import { onDestroy, onMount } from "svelte"
-
+  import { browser } from "$app/environment"
+  import { createEventDispatcher, onMount } from "svelte"
+  import { writable } from "svelte/store"
+  import { writableDerived } from "../utils/writableDerived"
 
   let point:HTMLElement
+  let container:HTMLElement
 
-  let x: number = 0
-  let y: number = 0
+  function width() {
+    return browser && container ? container.offsetWidth : 100
+  }
+  function height() {
+    return browser && container ? container.offsetHeight : 100
+  }
+
+  const rawPos = writable<Point>({x: 0, y: 0})
+  const target = writable<Point>({x: 0, y: 0})
+  export const pos = writableDerived<Point, Point>(
+    rawPos,
+    (value: Point) => ({
+      x: 6*(value.x/width() - 1/2),
+      y: 6*(value.y/height() - 1/2)
+    }),
+    (value: Point) => ({
+      x: (value.x/6 + 1/2)*width(),
+      y: (value.y/6 + 1/2)*height()
+    }),
+  )
 
   let mousedown: boolean = false
 
@@ -18,15 +44,19 @@
     mousedown = false
   }
 
+  const dispatch = createEventDispatcher()
   function handlemouse(e: MouseEvent) {
     if (!mousedown) return
-    x = e.offsetX
-    y = e.offsetY
+    $target = {x: e.offsetX, y: e.offsetY}
+    $rawPos = {x: e.offsetX, y: e.offsetY}
+    dispatch('change', {
+      pos: $pos
+    })
   }
 
   $: if (browser && point) {
-    point.style.left=`${x-2}px`
-    point.style.top=`${y-2}px`
+    point.style.left=`${$rawPos.x-2}px`
+    point.style.top=`${$rawPos.y-2}px`
   }
 
   onMount(() => {
@@ -37,22 +67,22 @@
   })
 </script>
 
-<div class="plane-input" on:mousedown={handlemousedown} on:mousemove={handlemouse}>
-  <div class="plane-input-point" data-x={x} data-y={y} bind:this={point}></div>
+<div class="plane-input" bind:this={container} on:mousedown={handlemousedown} on:mousemove={handlemouse}>
+  <div class="plane-input-point" bind:this={point}></div>
 </div>
 
 <style lang="scss">
   .plane-input {
-    width: 100px;
-    height: 100px;
+    width: 270px;
+    height: 270px;
 
-    border: 2px solid black;
+    border: 2px solid var(--borderColor);
     position: relative;
 
     .plane-input-point {
       width: 4px;
       height: 4px;
-      background-color: black;
+      background-color: var(--thickBorderColor);
       position: absolute;
       pointer-events: none;
     }

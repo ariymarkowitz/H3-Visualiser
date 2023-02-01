@@ -2,12 +2,14 @@
   import Renderer from '../lib/Renderer.svelte'
   import Latex from '../lib/ui/Latex.svelte'
   import NumberInput from '../lib/ui/NumberInput.svelte'
-  import MatrixInput from '../lib/ui/MatrixInput.svelte'
+  import MatrixInput, { type MatrixInputEvent } from '../lib/ui/MatrixInput.svelte'
   import { theme, themes, themeCSS } from '../style/themes/themes'
   import { variables } from 'svelte-styling'
-    import { mIsSingular, type CMat } from '$lib/math/complex'
-    import { browser } from '$app/environment'
-    import PlaneInput from '$lib/ui/PlaneInput.svelte'
+  import { complex, mIsSingular, type CMat, type Complex } from '$lib/math/complex'
+  import { browser } from '$app/environment'
+  import PlaneInput, { type Point } from '$lib/ui/PlaneInput.svelte'
+  import type { Writable } from 'svelte/store'
+  import type ComplexInput from '$lib/ui/ComplexInput.svelte'
 
   let currentTheme: string = 'Light'
   $: {
@@ -27,7 +29,20 @@
   $: {
     const show = [showiso1, showiso2]
     gens = [mat1input, mat2input].filter((m, i): m is CMat => m !== undefined && !mIsSingular(m) && show[i])
-    console.log(gens)
+  }
+
+  let focus: {element: ComplexInput, state?: Complex}
+  function focusIsoInput(iso: number, e: CustomEvent<MatrixInputEvent>) {
+    focus = {element: e.detail.target, state: e.detail.state}
+  }
+  let planeInputPos: Writable<Point>
+  $: if (focus?.state) {
+    $planeInputPos = {x: focus.state.re, y: focus.state.im}
+  }
+  
+  function planeInputChanged(e: CustomEvent<{pos: Point}>) {
+    const pos = e.detail.pos
+    focus.element.setState(complex(pos.x, pos.y))
   }
 
 </script>
@@ -40,12 +55,12 @@
     {/if}
   </div>
   <div class="sidebar">
-    <div class="sidebar-row">Depth<NumberInput min={1} max={15} init={10} bind:state={depth}/></div>
+    <div class="sidebar-row">Depth<NumberInput min={1} max={20} init={10} bind:state={depth}/></div>
     <div class="sidebar-row">
       <input type="checkbox" name="isometry1" bind:checked={showiso1}/>Isometry 1
       <div class="combined-elements">
         <Latex text="\left[\rule{'{'}0cm{'}'}{'{'}3em{'}'}\right." />
-        <MatrixInput bind:state={mat1input} />
+        <MatrixInput bind:state={mat1input} on:focus={e => focusIsoInput(0, e)}/>
         <Latex text="\left.\rule{'{'}0cm{'}'}{'{'}3em{'}'}\right]" />
       </div>
     </div>
@@ -53,13 +68,14 @@
       <input type="checkbox" name="isometry2" bind:checked={showiso2} />Isometry 2
       <div class="combined-elements">
         <Latex text="\left[\rule{'{'}0cm{'}'}{'{'}3em{'}'}\right." />
-        <MatrixInput bind:state={mat2input} />
+        <MatrixInput bind:state={mat2input} on:focus={e => focusIsoInput(1, e)} />
         <Latex text="\left.\rule{'{'}0cm{'}'}{'{'}3em{'}'}\right]" />
       </div>
     </div>
     <div class="sidebar-row">
-      <div class="spacer" />
-      <PlaneInput />
+      <div class="centering">
+        <PlaneInput bind:pos={planeInputPos} on:change={planeInputChanged}/>
+      </div>
     </div>
   </div>
 </div>
