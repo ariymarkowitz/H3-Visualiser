@@ -7,7 +7,7 @@
 <script lang="ts">
   import { browser } from "$app/environment"
   import { createEventDispatcher, onMount } from "svelte"
-  import { writable } from "svelte/store"
+  import { writable, type Updater, type Writable } from "svelte/store"
   import { writableDerived } from "../utils/writableDerived"
 
   let point:HTMLElement
@@ -20,24 +20,72 @@
     return browser && container ? container.offsetHeight : 100
   }
 
-  const rawPos = writable<Point>({x: 0, y: 0})
-  const target = writable<Point>({x: 0, y: 0})
-  export const pos = writableDerived<Point, Point>(
-    rawPos,
-    (value: Point) => ({
-      x: 6*(value.x/width() - 1/2),
-      y: 6*(value.y/height() - 1/2)
-    }),
-    (value: Point) => ({
-      x: (value.x/6 + 1/2)*width(),
-      y: (value.y/6 + 1/2)*height()
-    }),
-  )
+  let _pos = writable<Point>({x: 0, y: 0})
+  let _target = writable<Point>({x: 0, y: 0})
+
+  export const pos = {
+    set(value: Point, smooth=false) {
+      if (!smooth) $_pos = value
+      $_target = value
+    },
+    subscribe: _pos.subscribe,
+    update(updater: Updater<Point>, smooth=false) {
+      _pos.update(value => {
+        const newValue = updater(value)
+        if (!smooth) $_target = newValue
+        return newValue
+      })
+    },
+  }
+
+  let _t: number | undefined
+  let _f: number
+  $: {
+    if ($_pos.x == $_target.x && $_pos.y == $_target.y) {
+      _t = undefined
+    } else {
+      cancelAnimationFrame(_f)
+      _f = requestAnimationFrame(t => updatePos(t))
+    }
+  }
+  function updatePos(t: number) {
+    if (_t === undefined) {
+      requestAnimationFrame(updatePos)
+      _t = t
+      return
+    }
+    const s = Math.exp(-(t-_t)/100)
+    _pos.update(({x, y}) => {
+      const newPos = {
+        x: s*x + (1-s)*$_target.x, 
+        y: s*y + (1-s)*$_target.y, 
+      }
+      if (Math.abs(newPos.x - $_target.x) < 1e-4) newPos.x = $_target.x
+      if (Math.abs(newPos.y - $_target.y) < 1e-4) newPos.y = $_target.y
+      return newPos
+    })
+    _t = t
+  }
+
+  function posToRaw(p: Point) {
+    return {
+      x: (p.x/6 + 1/2)*width(),
+      y: (p.y/6 + 1/2)*height()
+    }
+  }
+
+  function rawToPos(p: Point) {
+    return {
+      x: 6*(p.x/width() - 1/2),
+      y: 6*(p.y/height() - 1/2)
+    }
+  }
 
   let mousedown: boolean = false
 
   function handlemousedown(e: MouseEvent) {
     mousedown = true
+    handlemouse(e)
   }
 
   function handlemouseup(e: MouseEvent) {
@@ -47,16 +95,16 @@
   const dispatch = createEventDispatcher()
   function handlemouse(e: MouseEvent) {
     if (!mousedown) return
-    $target = {x: e.offsetX, y: e.offsetY}
-    $rawPos = {x: e.offsetX, y: e.offsetY}
+    pos.set(rawToPos({x: e.offsetX, y: e.offsetY}), true)
     dispatch('change', {
       pos: $pos
     })
   }
 
   $: if (browser && point) {
-    point.style.left=`${$rawPos.x-2}px`
-    point.style.top=`${$rawPos.y-2}px`
+    const {x, y} = posToRaw($pos)
+    point.style.left=`${x-2}px`
+    point.style.top=`${y-2}px`
   }
 
   onMount(() => {

@@ -9,7 +9,7 @@
   import { CopyShader } from 'three/examples/jsm/shaders/CopyShader'
   import { theme } from '../style/themes/themes'
   import { CayleyTree } from './CayleyTree'
-  import { type CMat } from './math/complex'
+  import type { CMat } from './math/complex'
 
   export let width: number
   export let height: number

@@ -38,7 +38,7 @@
     colors = values.map(x => x.c.map(c => new Color(c))).flat()
   }
 
-  let focus: {element: ComplexInput, state?: Complex}
+  let focus: {element: ComplexInput, state?: Complex} | undefined
   function focusIsoInput(iso: number, e: CustomEvent<MatrixInputEvent>) {
     focus = {element: e.detail.target, state: e.detail.state}
   }
@@ -47,9 +47,8 @@
     $planeInputPos = {x: focus.state.re, y: focus.state.im}
   }
   
-  function planeInputChanged(e: CustomEvent<{pos: Point}>) {
-    const pos = e.detail.pos
-    focus.element.setState(complex(pos.x, pos.y))
+  $: if (focus) {
+    focus.element.setState(complex($planeInputPos.x, $planeInputPos.y))
   }
 
 </script>
@@ -81,7 +80,7 @@
     </div>
     <div class="sidebar-row">
       <div class="centering">
-        <PlaneInput bind:pos={planeInputPos} on:change={planeInputChanged}/>
+        <PlaneInput bind:pos={planeInputPos} />
       </div>
     </div>
     <div class="sidebar-row">
