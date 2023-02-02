@@ -10,6 +10,8 @@
   import { createEventDispatcher, onMount } from 'svelte'
   import { writable, type Updater } from 'svelte/store'
 
+  const dispatch = createEventDispatcher()
+
   let point: HTMLElement
   let container: HTMLElement
 
@@ -62,6 +64,7 @@
       }
       if (Math.abs(newPos.x - $_target.x) < 1e-4) newPos.x = $_target.x
       if (Math.abs(newPos.y - $_target.y) < 1e-4) newPos.y = $_target.y
+      dispatch('change', newPos)
       return newPos
     })
     _t = t
@@ -92,13 +95,9 @@
     mousedown = false
   }
 
-  const dispatch = createEventDispatcher()
   function handlemouse(e: MouseEvent) {
     if (!mousedown) return
     pos.set(rawToPos({ x: e.offsetX, y: e.offsetY }), true)
-    dispatch('change', {
-      pos: $pos
-    })
   }
 
   $: if (browser && point) {

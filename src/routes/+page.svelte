@@ -48,8 +48,10 @@
     $planeInputPos = { x: focus.state.re, y: focus.state.im }
   }
 
-  $: if (focus) {
-    focus.element.setState(complex($planeInputPos.x, $planeInputPos.y))
+  function onPlaneChange(e: CustomEvent<Point>) {
+    if (focus) {
+      focus.element.setState(complex(e.detail.x, e.detail.y))
+    }
   }
 </script>
 
@@ -82,7 +84,7 @@
     </div>
     <div class="sidebar-row">
       <div class="centering">
-        <PlaneInput bind:pos={planeInputPos} />
+        <PlaneInput bind:pos={planeInputPos} on:change={onPlaneChange}/>
       </div>
     </div>
     <div class="sidebar-row">
