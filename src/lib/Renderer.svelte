@@ -2,6 +2,7 @@
   import { onMount } from 'svelte'
   import * as THREE from 'three'
   import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls'
+    import type { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
   import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer'
   import { ClearMaskPass, MaskPass } from 'three/examples/jsm/postprocessing/MaskPass'
   import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
@@ -23,7 +24,7 @@
   let renderer: THREE.WebGLRenderer
   let id: number
 
-  let setMesh: (
+  let updateTree: (
     gens: CMat[],
     colors: THREE.Color[],
     depth: number,
@@ -31,7 +32,7 @@
     height: number
   ) => void
 
-  $: if (setMesh) setMesh(gens, colors, depth, width, height)
+  $: if (updateTree) updateTree(gens, colors, depth, width, height)
 
   onMount(() => {
     let dirty = true
@@ -39,18 +40,21 @@
 
     const shader = {
       outline: {
-        vertex_shader: [
-          'uniform float offset;',
-          'void main() {',
-          'vec4 pos = modelViewMatrix * vec4( position + normal * offset, 1.0 );',
-          'gl_Position = projectionMatrix * pos;',
-          '}'
-        ].join('\n'),
+        vertex_shader: `
+        uniform float offset;
+        void main() {
+          vec4 pos = modelViewMatrix * vec4( position + normal * offset, 1.0 );
+          gl_Position = projectionMatrix * pos;
+        }
+        `,
 
-        fragment_shader: ['uniform vec4 color;', 'void main(){', 'gl_FragColor = color;', '}'].join(
-          '\n'
-        )
-      }
+        fragment_shader: `
+        uniform vec4 color;
+        void main() {
+          gl_FragColor = color;
+        }
+        `
+      },
     }
 
     renderer = new THREE.WebGLRenderer({ antialias: true, canvas })
@@ -98,7 +102,7 @@
     maskScene2.add(sphereMesh.clone())
 
     // shader
-    const uniforms = {
+    const outlineUniforms = {
       offset: {
         type: 'f',
         value: 0.01
@@ -108,17 +112,16 @@
       }
     }
 
-    const outShader = shader['outline']
+    const outShader = shader.outline
 
     const matShader = new THREE.ShaderMaterial({
-      uniforms: uniforms,
+      uniforms: outlineUniforms,
       vertexShader: outShader.vertex_shader,
       fragmentShader: outShader.fragment_shader
     })
     theme.subscribe((newTheme) => {
       const c = new THREE.Color(newTheme.canvas.foreground)
       matShader.uniforms.color.value = [c.r, c.g, c.b, 1]
-      matShader.needsUpdate = true
       setDirty()
     })
 
@@ -148,27 +151,35 @@
     composer.addPass(clearMask)
     composer.addPass(copyPass)
 
+    id = requestAnimationFrame(animate)
+    controls.addEventListener('change', setDirty)
+
+    let tree: CayleyTree = new CayleyTree(width, height)
+    updateTreeMaterial()
+    updateTree = (gens, colors, depth, width, height) => {
+      tree.setGeometry(gens, colors, depth)
+
+      scene.add(tree.mesh)
+      setDirty()
+    }
+
+    function updateTreeMaterial() {
+      const mat = tree.mesh.material
+      mat.uniforms.fadeColor.value = new THREE.Color($theme.ui.background).toArray()
+      mat.uniforms.fadeNear.value = camera.position.length()-1
+      mat.uniforms.fadeFar.value = camera.position.length()+1
+      mat.uniforms.fadeStrength.value = 0.7
+    }
+
     function animate() {
       id = requestAnimationFrame(animate)
       controls.update()
       if (dirty) {
         matShader.uniforms.offset.value = 0.003 * camera.position.length()
+        updateTreeMaterial()
         composer.render()
         dirty = false
       }
-    }
-
-    id = requestAnimationFrame(animate)
-    controls.addEventListener('change', setDirty)
-
-    setMesh = (gens, colors, depth, width, height) => {
-      if (mesh) {
-        scene.remove(mesh)
-      }
-      const tree = new CayleyTree(gens, colors, depth, width, height)
-      mesh = tree.mesh()
-      scene.add(mesh)
-      setDirty()
     }
 
     return () => {

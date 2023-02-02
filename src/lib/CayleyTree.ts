@@ -12,24 +12,66 @@ interface TreeData {
   lines: number[]
 }
 
+const shader = {
+  depth: {
+    fragment_shader: `
+    uniform vec3 color;
+    uniform float near;
+    uniform float far;
+    uniform float strength;
+    void main(){
+      float blend = (gl_FragCoord.z - near)/(far - near) * strength;
+      gl_FragColor = mix(gl_FragColor, vec4(color, 1), blend);
+    }
+    `
+  }
+}
+
 export class CayleyTree {
-  width: number
-  height: number
-  generators: CMat[]
-  depth: number
+  mesh: LineSegments2
+  geometry: LineSegmentsGeometry
+  generators: CMat[] = []
+  depth = 0
 
   colors: THREE.Color[] = []
   minSize = 0.015
 
-  constructor(gens: CMat[], colors: THREE.Color[], depth: number, width: number, height: number) {
-    this.width = width
-    this.height = height
+  constructor(width: number, height: number) {
+    const material = new LineMaterial({
+      vertexColors: true,
+      linewidth: 2, // px
+      resolution: new THREE.Vector2(width, height),
+      worldUnits: false
+    })
+    material.onBeforeCompile = (shader) => {
+      const i = shader.fragmentShader.indexOf('#include <premultiplied_alpha_fragment>')
+      const first = shader.fragmentShader.slice(0, i)
+      const last = shader.fragmentShader.slice(i)
+      shader.fragmentShader = `
+        uniform vec3 fadeColor;
+        uniform float fadeNear;
+        uniform float fadeFar;
+        uniform float fadeStrength;
+      ` + first + `
+          float blend = (gl_FragCoord.z / gl_FragCoord.w - fadeNear)/(fadeFar - fadeNear) * fadeStrength;
+          gl_FragColor = mix(gl_FragColor, vec4(fadeColor, alpha), blend);
+      ` + last
+    }
+    material.uniforms.fadeColor = { value: [1, 1, 1] }
+    material.uniforms.fadeNear = { type: 'f', value: 0.5 } as any
+    material.uniforms.fadeFar = { type: 'f', value: 2 } as any
+    material.uniforms.fadeStrength = { type: 'f', value: 0.5 } as any
+
+    this.geometry = new LineSegmentsGeometry()
+
+    this.mesh = new LineSegments2(this.geometry, material)
+  }
+
+  setGeometry(gens: CMat[], colors: THREE.Color[], depth: number) {
     this.generators = gens.map(g => [g, minv(g)]).flat()
     this.depth = depth
     this.colors = colors
-  }
 
-  mesh() {
     const data: TreeData = {
       vertexColors: [],
       vertices: [],
@@ -38,17 +80,11 @@ export class CayleyTree {
     }
     this._tree(0, 1, undefined, quat(0, 0, 1, 0), mId(), vec3(0, 0, 1), data)
 
-    const geometry = new LineSegmentsGeometry()
-    geometry.setPositions(data.lines)
-    geometry.setColors(data.lineColors)
-    const material = new LineMaterial({
-      vertexColors: true,
-      linewidth: 2, // px
-      resolution: new THREE.Vector2(this.width, this.height),
-      worldUnits: false
-    })
-    const lineMesh = new LineSegments2(geometry, material)
-    return lineMesh
+    this.geometry = new LineSegmentsGeometry()
+
+    this.geometry.setPositions(data.lines)
+    this.geometry.setColors(data.lineColors)
+    this.mesh.geometry = this.geometry
   }
 
   _tree(depth: number, size: number, genN: number | undefined, q: Quaternion, mat: CMat, p: Vec3, state: TreeData) {

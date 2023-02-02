@@ -36,6 +36,7 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"three": "^0.149.0"
+		"three": "^0.149.0",
+		"three-extended-material": "^0.1.3"
 	}
 }
