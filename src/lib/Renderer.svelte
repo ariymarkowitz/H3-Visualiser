@@ -87,6 +87,11 @@
     const axis = new THREE.AxesHelper(1)
     axis.setColors(new THREE.Color(0xff9999), new THREE.Color(0x66ff66), new THREE.Color(0x9999ff))
     scene.add(axis)
+    theme.subscribe((newTheme) => {
+      const colors = newTheme.canvas.axisColors.map(c => new THREE.Color(c))
+      axis.setColors(colors[0], colors[1], colors[2])
+      setDirty()
+    })
 
     // const w = cexp(complex(0, -Math.PI / 3))
     // const A = cMatrix(1, 1, 1, w)

@@ -14,7 +14,8 @@ export interface Theme {
   },
   canvas: {
     foreground: string,
-    isometryColors: string[][]
+    isometryColors: string[][],
+    axisColors: string[]
   }
 }
 

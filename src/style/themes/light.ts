@@ -12,6 +12,7 @@ export default {
     isometryColors: [
       ['#ff0000', '#cc0000'],
       ['#0000ff', '#0000cc'],
-    ]
+    ],
+    axisColors: ['#ff9999', '#66ff66', '#9999ff'],
   }
 }
