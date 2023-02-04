@@ -88,21 +88,21 @@ input[type='checkbox'] {
   background-color: none;
 }
 
-input[type="checkbox"]::before {
-  content: "";
+input[type='checkbox']::before {
+  content: '';
   width: 10px;
   height: 10px;
 }
 
-input[type="checkbox"]:checked::before {
+input[type='checkbox']:checked::before {
   background-color: white;
 }
 
-input[type="checkbox"][name="isometry1"]:checked::before {
+input[type='checkbox'][name='isometry1']:checked::before {
   background-color: var(--isometry1Color);
 }
 
-input[type="checkbox"][name="isometry2"]:checked::before {
+input[type='checkbox'][name='isometry2']:checked::before {
   background-color: var(--isometry2Color);
 }
 
@@ -139,7 +139,7 @@ hr {
       position: relative;
 
       i {
-        border-width: 0 .3em .3em;
+        border-width: 0 0.3em 0.3em;
         border-color: transparent transparent var(--borderColor);
         border-style: solid;
         margin: -0.2em 0 0 -0.3em;
@@ -153,7 +153,6 @@ hr {
     .number-input-down {
       flex: 1;
       border: 1px solid var(--borderColor);
-      ;
       border-left: none;
       border-top: none;
 
@@ -162,7 +161,7 @@ hr {
       position: relative;
 
       i {
-        border-width: .3em .3em 0;
+        border-width: 0.3em 0.3em 0;
         border-color: var(--borderColor) transparent transparent;
         border-style: solid;
         margin: -0.1em 0 0 -0.3em;
@@ -198,14 +197,12 @@ hr {
       background: none;
       color: inherit;
       border: 1px dashed var(--borderColor);
-      ;
       padding: 2px;
       text-align: center;
     }
 
     input:focus {
       border-color: var(--focusBorderColor);
-      ;
     }
   }
 }
@@ -219,5 +216,4 @@ hr {
 
 .latex {
   color: var(--thickBorderColor);
-  ;
 }

@@ -7,10 +7,10 @@
 
   const dispatch = createEventDispatcher()
 
-  export let min: number = 1
-  export let max: number = 100
-  export let valid: (n: number) => boolean = (n) => true
-  export let init: number = min
+  export let min = 1
+  export let max = 100
+  export let valid: (n: number) => boolean = () => true
+  export let init = min
 
   // The numeric state of the field.
   export let state: number = init

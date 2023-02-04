@@ -23,8 +23,8 @@
   let mat1input: CMat | undefined
   let mat2input: CMat | undefined
 
-  let showiso1: boolean = true
-  let showiso2: boolean = true
+  let showiso1 = true
+  let showiso2 = true
 
   let gens: CMat[] = []
   let colors: Color[] = []
@@ -84,7 +84,7 @@
     </div>
     <div class="sidebar-row">
       <div class="centering">
-        <PlaneInput bind:pos={planeInputPos} on:change={onPlaneChange}/>
+        <PlaneInput bind:pos={planeInputPos} on:change={onPlaneChange} />
       </div>
     </div>
     <div class="sidebar-row">

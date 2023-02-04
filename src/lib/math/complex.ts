@@ -1,6 +1,6 @@
 export interface Complex {
-  re: number,
-  im: number,
+  re: number
+  im: number
 }
 
 export function cmplx(re: number, im: number): Complex {
@@ -101,7 +101,7 @@ export function mmul(a: CMat, b: CMat): CMat {
     cadd(cmul(a[0], b[0]), cmul(a[1], b[2])),
     cadd(cmul(a[0], b[1]), cmul(a[1], b[3])),
     cadd(cmul(a[2], b[0]), cmul(a[3], b[2])),
-    cadd(cmul(a[2], b[1]), cmul(a[3], b[3])),
+    cadd(cmul(a[2], b[1]), cmul(a[3], b[3]))
   ]
 }
 
@@ -140,7 +140,7 @@ export function mdiv(a: CMat, b: CMat): CMat {
     cdiv(cadd(cmul(a[0], b[3]), cmul(a[1], cneg(b[1]))), d),
     cdiv(cadd(cmul(a[0], cneg(b[1])), cmul(a[1], b[0])), d),
     cdiv(cadd(cmul(a[2], b[3]), cmul(a[3], cneg(b[1]))), d),
-    cdiv(cadd(cmul(a[2], cneg(b[1])), cmul(a[1], b[0])), d),
+    cdiv(cadd(cmul(a[2], cneg(b[1])), cmul(a[1], b[0])), d)
   ]
 }
 
@@ -168,7 +168,12 @@ export function complex(n: ComplexConvert | number[], m?: number) {
   throw new Error("Can't convert to complex number")
 }
 
-export function cMatrix(a1: ComplexConvert, a2: ComplexConvert, a3: ComplexConvert, a4: ComplexConvert): CMat {
+export function cMatrix(
+  a1: ComplexConvert,
+  a2: ComplexConvert,
+  a3: ComplexConvert,
+  a4: ComplexConvert
+): CMat {
   return [complex(a1), complex(a2), complex(a3), complex(a4)]
 }
 
@@ -177,8 +182,8 @@ export function mIsId(a: CMat, e = 0) {
 }
 
 export interface Vec3 {
-  x: number,
-  y: number,
+  x: number
+  y: number
   z: number
 }
 
@@ -253,9 +258,9 @@ export function vcross(a: Vec3, b: Vec3) {
 }
 
 export interface Quaternion {
-  r: number,
-  i: number,
-  j: number,
+  r: number
+  i: number
+  j: number
   k: number
 }
 
@@ -291,7 +296,7 @@ export function qmult(a: Quaternion, b: Quaternion) {
     a.r * b.r - a.i * b.i - a.j * b.j - a.k * b.k,
     a.r * b.i + a.i * b.r + a.j * b.k - a.k * b.j,
     a.r * b.j - a.i * b.k + a.j * b.r + a.k * b.i,
-    a.r * b.k + a.i * b.j - a.j * b.i + a.k * b.r,
+    a.r * b.k + a.i * b.j - a.j * b.i + a.k * b.r
   )
 }
 
@@ -312,7 +317,7 @@ export function qdiv(a: Quaternion, b: Quaternion) {
     (a.r * b.r + a.i * b.i + a.j * b.j + a.k * b.k) / n,
     (-a.r * b.i + a.i * b.r - a.j * b.k + a.k * b.j) / n,
     (-a.r * b.j + a.i * b.k + a.j * b.r - a.k * b.i) / n,
-    (-a.r * b.k - a.i * b.j + a.j * b.i + a.k * b.r) / n,
+    (-a.r * b.k - a.i * b.j + a.j * b.i + a.k * b.r) / n
   )
 }
 
@@ -344,6 +349,6 @@ export function rotate(a: Vec3, q: Quaternion): Vec3 {
   return vec3(
     a.x * (1 - 2 * (qjj + qkk)) + a.y * 2 * (qij - qrk) + a.z * 2 * (qik + qrj),
     a.x * 2 * (qij + qrk) + a.y * (1 - 2 * (qii + qkk)) + a.z * 2 * (qjk - qri),
-    a.x * 2 * (qik - qrj) + a.y * 2 * (qjk + qri) + a.z * (1 - 2 * (qii + qjj)),
+    a.x * 2 * (qik - qrj) + a.y * 2 * (qjk + qri) + a.z * (1 - 2 * (qii + qjj))
   )
 }

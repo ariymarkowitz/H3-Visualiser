@@ -2,7 +2,18 @@ import * as THREE from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry'
-import { mId, minv, mIsId, mmul, quat, vdist, vec3, type CMat, type Quaternion, type Vec3 } from './math/complex'
+import {
+  mId,
+  minv,
+  mIsId,
+  mmul,
+  quat,
+  vdist,
+  vec3,
+  type CMat,
+  type Quaternion,
+  type Vec3
+} from './math/complex'
 import { geodesic, mobius, toBall } from './math/h3-math'
 
 interface TreeData {
@@ -10,21 +21,6 @@ interface TreeData {
   vertices: number[]
   lineColors: number[]
   lines: number[]
-}
-
-const shader = {
-  depth: {
-    fragment_shader: `
-    uniform vec3 color;
-    uniform float near;
-    uniform float far;
-    uniform float strength;
-    void main(){
-      float blend = (gl_FragCoord.z - near)/(far - near) * strength;
-      gl_FragColor = mix(gl_FragColor, vec4(color, 1), blend);
-    }
-    `
-  }
 }
 
 export class CayleyTree {
@@ -47,15 +43,19 @@ export class CayleyTree {
       const i = shader.fragmentShader.indexOf('#include <premultiplied_alpha_fragment>')
       const first = shader.fragmentShader.slice(0, i)
       const last = shader.fragmentShader.slice(i)
-      shader.fragmentShader = `
+      shader.fragmentShader =
+        `
         uniform vec3 fadeColor;
         uniform float fadeNear;
         uniform float fadeFar;
         uniform float fadeStrength;
-      ` + first + `
+      ` +
+        first +
+        `
           float blend = (gl_FragCoord.z / gl_FragCoord.w - fadeNear)/(fadeFar - fadeNear) * fadeStrength;
           gl_FragColor = mix(gl_FragColor, vec4(fadeColor, alpha), blend);
-      ` + last
+      ` +
+        last
     }
     material.uniforms.fadeColor = { value: [1, 1, 1] }
     material.uniforms.fadeNear = { type: 'f', value: 0.5 } as any
@@ -68,7 +68,7 @@ export class CayleyTree {
   }
 
   setGeometry(gens: CMat[], colors: THREE.Color[], depth: number) {
-    this.generators = gens.map(g => [g, minv(g)]).flat()
+    this.generators = gens.map((g) => [g, minv(g)]).flat()
     this.depth = depth
     this.colors = colors
 
@@ -87,7 +87,15 @@ export class CayleyTree {
     this.mesh.geometry = this.geometry
   }
 
-  _tree(depth: number, size: number, genN: number | undefined, q: Quaternion, mat: CMat, p: Vec3, state: TreeData) {
+  _tree(
+    depth: number,
+    size: number,
+    genN: number | undefined,
+    q: Quaternion,
+    mat: CMat,
+    p: Vec3,
+    state: TreeData
+  ) {
     if (depth >= this.depth || size < this.minSize) return
     if (depth > 0 && mIsId(mat, 1e-4)) return
 

@@ -2,7 +2,6 @@
   import { onMount } from 'svelte'
   import * as THREE from 'three'
   import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls'
-    import type { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
   import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer'
   import { ClearMaskPass, MaskPass } from 'three/examples/jsm/postprocessing/MaskPass'
   import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
@@ -24,15 +23,9 @@
   let renderer: THREE.WebGLRenderer
   let id: number
 
-  let updateTree: (
-    gens: CMat[],
-    colors: THREE.Color[],
-    depth: number,
-    width: number,
-    height: number
-  ) => void
+  let updateTree: (gens: CMat[], colors: THREE.Color[], depth: number) => void
 
-  $: if (updateTree) updateTree(gens, colors, depth, width, height)
+  $: if (updateTree) updateTree(gens, colors, depth)
 
   onMount(() => {
     let dirty = true
@@ -54,7 +47,7 @@
           gl_FragColor = color;
         }
         `
-      },
+      }
     }
 
     renderer = new THREE.WebGLRenderer({ antialias: true, canvas })
@@ -88,16 +81,10 @@
     axis.setColors(new THREE.Color(0xff9999), new THREE.Color(0x66ff66), new THREE.Color(0x9999ff))
     scene.add(axis)
     theme.subscribe((newTheme) => {
-      const colors = newTheme.canvas.axisColors.map(c => new THREE.Color(c))
+      const colors = newTheme.canvas.axisColors.map((c) => new THREE.Color(c))
       axis.setColors(colors[0], colors[1], colors[2])
       setDirty()
     })
-
-    // const w = cexp(complex(0, -Math.PI / 3))
-    // const A = cMatrix(1, 1, 1, w)
-    // const B = cMatrix(1, -1, -1, w)
-
-    let mesh: THREE.Mesh | undefined
 
     // # shaded model
     const sphereGeo = new THREE.SphereGeometry(1, 128, 64)
@@ -161,7 +148,7 @@
 
     let tree: CayleyTree = new CayleyTree(width, height)
     updateTreeMaterial()
-    updateTree = (gens, colors, depth, width, height) => {
+    updateTree = (gens, colors, depth) => {
       tree.setGeometry(gens, colors, depth)
 
       scene.add(tree.mesh)
@@ -171,8 +158,8 @@
     function updateTreeMaterial() {
       const mat = tree.mesh.material
       mat.uniforms.fadeColor.value = new THREE.Color($theme.ui.background).toArray()
-      mat.uniforms.fadeNear.value = camera.position.length()-1
-      mat.uniforms.fadeFar.value = camera.position.length()+1
+      mat.uniforms.fadeNear.value = camera.position.length() - 1
+      mat.uniforms.fadeFar.value = camera.position.length() + 1
       mat.uniforms.fadeStrength.value = 0.7
     }
 

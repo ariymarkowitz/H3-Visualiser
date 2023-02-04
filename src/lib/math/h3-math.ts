@@ -1,4 +1,31 @@
-import { cadd, cdot, cmplx, cnorm, cnormsq, crmul, csub, qdiv, qlerp, qnormsq, quat, rotate, vadd, vadd_, vclone, vdistsq, vec3, vnormalize, vnormsq, vrdiv_, vrmult, vsub, type CMat, type Complex, type Quaternion, type Vec3 } from './complex'
+import {
+  cadd,
+  cdot,
+  cmplx,
+  cnorm,
+  cnormsq,
+  crmul,
+  csub,
+  qdiv,
+  qlerp,
+  qnormsq,
+  quat,
+  rotate,
+  vadd,
+  vadd_,
+  vclone,
+  vdistsq,
+  vec3,
+  vnormalize,
+  vnormsq,
+  vrdiv_,
+  vrmult,
+  vsub,
+  type CMat,
+  type Complex,
+  type Quaternion,
+  type Vec3
+} from './complex'
 
 export function cmplxToQuat(c: Complex): Quaternion {
   return quat(c.re, c.im, 0, 0)
@@ -13,13 +40,13 @@ export function toBall(z: Quaternion): Vec3 {
   const t = z.j * z.j + z.k * z.k
 
   const norm = n + t + 2 * Math.sqrt(t) + 1
-  return vec3(z.r * 2 / norm, -z.i * 2 / norm, (n + t - 1) / norm)
+  return vec3((z.r * 2) / norm, (-z.i * 2) / norm, (n + t - 1) / norm)
 }
 
 export function toBallCmplx(z: Complex): Vec3 {
   const zsq = cnormsq(z)
   const n = zsq + 1
-  return vec3(z.re * 2 / n, -z.im * 2 / n, (zsq - 1) / n)
+  return vec3((z.re * 2) / n, (-z.im * 2) / n, (zsq - 1) / n)
 }
 
 export function endsOfGeodesic(a: Quaternion, b: Quaternion): [Complex, Complex] {
@@ -33,7 +60,7 @@ export function endsOfGeodesic(a: Quaternion, b: Quaternion): [Complex, Complex]
   const center = cadd(crmul(d, t), aCmplx)
 
   const radius = Math.sqrt((a.r - center.re) ** 2 + (a.i - center.im) ** 2 + a.j ** 2 + a.k ** 2)
-  const endDif = crmul(d, radius / (cnorm(d)))
+  const endDif = crmul(d, radius / cnorm(d))
   const end1 = cadd(center, endDif)
   const end2 = csub(center, endDif)
 

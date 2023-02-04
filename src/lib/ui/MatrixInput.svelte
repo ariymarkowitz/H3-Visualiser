@@ -44,9 +44,9 @@
 
 <div class="matrix-input-container">
   <div class="matrix-input">
-    <RealInput bind:this={state00Elt} bind:state={state00} on:focus={(e) => focus(0)} />
-    <RealInput bind:this={state01Elt} bind:state={state01} on:focus={(e) => focus(1)} />
-    <RealInput bind:this={state10Elt} bind:state={state10} on:focus={(e) => focus(2)} />
-    <RealInput bind:this={state11Elt} bind:state={state11} on:focus={(e) => focus(3)} />
+    <RealInput bind:this={state00Elt} bind:state={state00} on:focus={() => focus(0)} />
+    <RealInput bind:this={state01Elt} bind:state={state01} on:focus={() => focus(1)} />
+    <RealInput bind:this={state10Elt} bind:state={state10} on:focus={() => focus(2)} />
+    <RealInput bind:this={state11Elt} bind:state={state11} on:focus={() => focus(3)} />
   </div>
 </div>

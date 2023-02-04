@@ -84,14 +84,14 @@
     }
   }
 
-  let mousedown: boolean = false
+  let mousedown = false
 
   function handlemousedown(e: MouseEvent) {
     mousedown = true
     handlemouse(e)
   }
 
-  function handlemouseup(e: MouseEvent) {
+  function handlemouseup() {
     mousedown = false
   }
 
