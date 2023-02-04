@@ -7,3 +7,9 @@
 </script>
 
 <span class="latex" bind:this={element} />
+
+<style lang="scss">
+  .latex {
+    color: var(--thickBorderColor);
+  }
+</style>

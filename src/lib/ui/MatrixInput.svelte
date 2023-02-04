@@ -1,6 +1,6 @@
 <script lang="ts" context="module">
   export interface MatrixInputEvent {
-    target: RealInput
+    target: ComplexInput
     state?: Complex
   }
 </script>
@@ -8,12 +8,12 @@
 <script lang="ts">
   import type { CMat, Complex } from '$lib/math/complex'
   import { createEventDispatcher } from 'svelte'
-  import RealInput from './ComplexInput.svelte'
+  import ComplexInput from './ComplexInput.svelte'
 
-  let state00Elt: RealInput
-  let state01Elt: RealInput
-  let state10Elt: RealInput
-  let state11Elt: RealInput
+  let state00Elt: ComplexInput
+  let state01Elt: ComplexInput
+  let state10Elt: ComplexInput
+  let state11Elt: ComplexInput
 
   $: stateElts = [state00Elt, state01Elt, state10Elt, state11Elt]
 
@@ -44,9 +44,38 @@
 
 <div class="matrix-input-container">
   <div class="matrix-input">
-    <RealInput bind:this={state00Elt} bind:state={state00} on:focus={() => focus(0)} />
-    <RealInput bind:this={state01Elt} bind:state={state01} on:focus={() => focus(1)} />
-    <RealInput bind:this={state10Elt} bind:state={state10} on:focus={() => focus(2)} />
-    <RealInput bind:this={state11Elt} bind:state={state11} on:focus={() => focus(3)} />
+    <ComplexInput bind:this={state00Elt} bind:state={state00} on:focus={() => focus(0)} />
+    <ComplexInput bind:this={state01Elt} bind:state={state01} on:focus={() => focus(1)} />
+    <ComplexInput bind:this={state10Elt} bind:state={state10} on:focus={() => focus(2)} />
+    <ComplexInput bind:this={state11Elt} bind:state={state11} on:focus={() => focus(3)} />
   </div>
 </div>
+
+<style lang="scss">
+  .matrix-input-container {
+    display: flex;
+    gap: 0.5em;
+    align-items: center;
+  }
+  
+  .matrix-input {
+    display: inline-grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 3px;
+    width: 170px;
+    height: 80px;
+
+    :global(input) {
+        background: none;
+        color: inherit;
+        border: 1px dashed var(--borderColor);
+        padding: 2px;
+        text-align: center;
+      }
+
+    :global(input:focus) {
+      border-color: var(--focusBorderColor);
+    }
+  }
+</style>

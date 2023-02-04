@@ -62,4 +62,4 @@
   }
 </script>
 
-<input type="text" bind:value={input} on:input|preventDefault={validateInput} on:focus={focus} />
+<input class={$$props.class} type="text" bind:value={input} on:input|preventDefault={validateInput} on:focus={focus} />

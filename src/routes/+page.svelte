@@ -96,3 +96,67 @@
     </div>
   </div>
 </div>
+
+<style lang="scss">
+.container {
+  display: flex;
+  justify-content: center;
+  flex-direction: row;
+  gap: 0px 10px;
+  margin: 10px;
+
+  @media screen and (max-width: 600px) {
+    flex-direction: column;
+  }
+}
+
+.render-container {
+  max-width: 800px;
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.sidebar {
+  width: 330px;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+
+  @media screen and (max-width: 600px) {
+    width: 100%;
+  }
+}
+
+.sidebar-row {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  align-items: center;
+
+  .centering {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+input[type='checkbox'][name='isometry1']:checked::before {
+  background-color: var(--isometry1Color);
+}
+
+input[type='checkbox'][name='isometry2']:checked::before {
+  background-color: var(--isometry2Color);
+}
+
+.combined-elements {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.2em;
+}
+
+</style>

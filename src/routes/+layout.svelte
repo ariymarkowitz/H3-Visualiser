@@ -1,5 +1,5 @@
-<script lang="ts">
-  import '../style/globals.scss'
-</script>
+<style lang="scss">
+  @use '../style/globals';
+</style>
 
 <slot />

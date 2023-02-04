@@ -94,10 +94,79 @@
   }
 </script>
 
-<div class="number-input">
+<div class="input">
   <input type="text" bind:value={input} on:input|preventDefault={validateInput} />
-  <div class="number-input-buttons">
-    <div class="number-input-up" on:click={increment}><i /></div>
-    <div class="number-input-down" on:click={decrement}><i /></div>
+  <div class="input-buttons">
+    <div class="input-up" on:click={increment}><i /></div>
+    <div class="input-down" on:click={decrement}><i /></div>
   </div>
 </div>
+
+<style lang="scss">
+  .input {
+    display: flex;
+    width: 100%;
+    flex-direction: row;
+
+    input[type='text'] {
+      border-radius: 4px 0 0 4px;
+    }
+
+    i {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+    }
+  }
+
+  .input-up {
+    flex: 1;
+    border: 1px solid var(--borderColor);
+    border-left: none;
+
+    border-radius: 0 4px 0 0;
+
+    position: relative;
+
+    i {
+      border-width: 0 0.3em 0.3em;
+      border-color: transparent transparent var(--borderColor);
+      border-style: solid;
+      margin: -0.2em 0 0 -0.3em;
+    }
+
+    &:hover i {
+      border-color: transparent transparent var(--focusBorderColor);
+    }
+  }
+
+  .input-down {
+    flex: 1;
+    border: 1px solid var(--borderColor);
+    border-left: none;
+    border-top: none;
+
+    border-radius: 0 0 4px 0;
+
+    position: relative;
+
+    i {
+      border-width: 0.3em 0.3em 0;
+      border-color: var(--borderColor) transparent transparent;
+      border-style: solid;
+      margin: -0.1em 0 0 -0.3em;
+    }
+
+    &:hover i {
+      border-color: var(--focusBorderColor) transparent transparent;
+    }
+  }
+
+  .input-buttons {
+    flex-shrink: 0;
+    width: 20px;
+
+    display: flex;
+    flex-direction: column;
+  }
+</style>
