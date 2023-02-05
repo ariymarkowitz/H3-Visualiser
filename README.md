@@ -1,6 +1,6 @@
 # H3 Visualiser
 
-![Screenshot](images/screenshot.png)
+<img src="images/screenshot.png" width="800px">
 
 https://ariymarkowitz.github.io/H3-Visualiser/
 
