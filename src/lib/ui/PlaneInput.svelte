@@ -73,14 +73,14 @@
   function posToRaw(p: Point) {
     return {
       x: (p.x / 6 + 1 / 2) * width(),
-      y: (p.y / 6 + 1 / 2) * height()
+      y: (-p.y / 6 + 1 / 2) * height()
     }
   }
 
   function rawToPos(p: Point) {
     return {
       x: 6 * (p.x / width() - 1 / 2),
-      y: 6 * (p.y / height() - 1 / 2)
+      y: -6 * (p.y / height() - 1 / 2)
     }
   }
 
