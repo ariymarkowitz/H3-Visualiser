@@ -1,5 +1,7 @@
 # H3 Visualiser
 
+![Screenshot](images/screenshot.png)
+
 https://ariymarkowitz.github.io/H3-Visualiser/
 
 This is a visualiser of 2-generated subgroups of SL(2, ℂ) in hyperbolic 3-space.
@@ -20,4 +22,6 @@ PSL(2, ℂ) (the group of 2x2 invertible complex matrices, up to scaling) has a 
 
 - The red edges correspond to isometry 1, and the blue edges correspond to isometry 2. The darker shade (lighter shade in dark mode) indicates that the directed edge pointing away from the origin corresponds to the inverse of the corresponding generator.
 
-The rendering is optimised by truncating paths with edges that become sufficiently short in euclidean space. In some cases, this can cause branches to get cut off if the distance to the origin oscillates significantly along a path.
+- The animation buttons will animate the transformation of the graph by either of the given matrices.
+
+Note: The rendering is optimised by truncating paths with edges that become sufficiently short in euclidean space. In some cases, this can cause large branches to get cut off if the distance to the origin oscillates significantly along a path.
