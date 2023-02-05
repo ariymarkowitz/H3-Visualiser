@@ -5,7 +5,8 @@ export default {
     textColor: '#eee',
     border: 'rgba(255, 255, 255, 0.6)',
     focusBorder: '#fff',
-    thickBorder: '#fff'
+    thickBorder: '#fff',
+    githubImage: 'github-mark-white.svg'
   },
   canvas: {
     foreground: '#aaaaaa',

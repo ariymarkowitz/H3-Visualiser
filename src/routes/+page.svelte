@@ -86,7 +86,7 @@
       </div>
     </div>
     <div class="sidebar-row">
-      <div class="centering">
+      <div class="row-center">
         <PlaneInput bind:pos={planeInputPos} on:change={onPlaneChange} />
       </div>
     </div>
@@ -106,6 +106,9 @@
       </button>
     </div>
   </div>
+  <a href="https://github.com/ariymarkowitz/H3-Visualiser" class="github" draggable=false target="_blank" rel="noopener noreferrer">
+    <img src="/{$theme.ui.githubImage}" alt="link to github" width="40" height="40" draggable=false />
+  </a>
 </div>
 
 <style lang="scss">
@@ -114,7 +117,6 @@
   justify-content: center;
   flex-direction: row;
   gap: 0px 10px;
-  margin: 10px;
 
   @media screen and (max-width: 600px) {
     flex-direction: column;
@@ -135,6 +137,7 @@
   display: flex;
   flex-direction: column;
   gap: 1em;
+  margin: 10px 10px 0 0;
 
   @media screen and (max-width: 600px) {
     width: 100%;
@@ -147,11 +150,22 @@
   gap: 10px;
   align-items: center;
 
-  .centering {
+  .row-center {
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
+  }
+}
+
+.github {
+  position:fixed;
+  bottom: 10px;
+  right: 10px;
+  opacity: 0.5;
+  user-select: none;
+  &:hover {
+    opacity: 1;
   }
 }
 
