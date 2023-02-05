@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte'
+  import type { Writable } from 'svelte/store'
   import * as THREE from 'three'
   import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls'
   import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer'
@@ -8,8 +9,9 @@
   import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass'
   import { CopyShader } from 'three/examples/jsm/shaders/CopyShader'
   import { theme } from '../style/themes/themes'
-  import { CayleyTree } from './CayleyTree'
-  import type { CMat } from './math/complex'
+  import { CayleyTree, type TreeUniforms } from './CayleyTree'
+  import { mpow, type CMat } from './math/complex'
+  import { cached } from './ui/cached'
 
   export let width: number
   export let height: number
@@ -17,15 +19,30 @@
   export let gens: CMat[] = []
   export let colors: THREE.Color[] = []
 
+  export let animateIso: CMat | undefined = undefined
+  let t = 0
+  $: if (updateTree && !animateIso) {
+    updateTree(gens, colors, depth)
+  }
+
   let dpr = window.devicePixelRatio
 
   let canvas: HTMLCanvasElement
   let renderer: THREE.WebGLRenderer
   let id: number
 
-  let updateTree: (gens: CMat[], colors: THREE.Color[], depth: number) => void
-
-  $: if (updateTree) updateTree(gens, colors, depth)
+  let treeUniforms: Writable<TreeUniforms>
+  let cameraPos = cached<THREE.Vector3>(undefined, (a, b) => a.equals(b))
+  let updateTree: (gens: CMat[], colors: THREE.Color[], depth: number, iso?: CMat) => void
+ 
+  $: if (treeUniforms && $cameraPos) {
+    $treeUniforms = {
+      fadeColor: new THREE.Color($theme.ui.background).toArray(),
+      fadeNear: $cameraPos.length() - 1,
+      fadeFar: $cameraPos.length() + 1,
+      fadeStrength: 0.7
+    }
+  }
 
   onMount(() => {
     let dirty = true
@@ -72,10 +89,6 @@
     const controls = new TrackballControls(camera, renderer.domElement)
     controls.noPan = true
     controls.rotateSpeed = 2
-
-    // const light = new THREE.DirectionalLight(0xffffff)
-    // light.position.set(1, 1, 1)
-    // scene.add(light)
 
     const axis = new THREE.AxesHelper(1)
     axis.setColors(new THREE.Color(0xff9999), new THREE.Color(0x66ff66), new THREE.Color(0x9999ff))
@@ -147,30 +160,41 @@
     controls.addEventListener('change', setDirty)
 
     let tree: CayleyTree = new CayleyTree(width, height)
-    updateTreeMaterial()
-    updateTree = (gens, colors, depth) => {
-      tree.setGeometry(gens, colors, depth)
-
-      scene.add(tree.mesh)
+    treeUniforms = tree.uniforms
+    updateTree = (gens, colors, depth, iso) => {
+      tree.setGeometry(gens, colors, depth, iso)
       setDirty()
     }
+    tree.onReady(() => {
+      if (!tree.mesh) throw new Error("Mesh is undefined")
+      scene.add(tree.mesh)
+    })
+    tree.uniforms.subscribe(setDirty)
 
-    function updateTreeMaterial() {
-      const mat = tree.mesh.material
-      mat.uniforms.fadeColor.value = new THREE.Color($theme.ui.background).toArray()
-      mat.uniforms.fadeNear.value = camera.position.length() - 1
-      mat.uniforms.fadeFar.value = camera.position.length() + 1
-      mat.uniforms.fadeStrength.value = 0.7
-    }
-
-    function animate() {
+    let _time: number | undefined
+    function animate(time: number) {
       id = requestAnimationFrame(animate)
       controls.update()
+      cameraPos.set(camera.position.clone())
+      if (animateIso) dirty = true
       if (dirty) {
-        matShader.uniforms.offset.value = 0.003 * camera.position.length()
-        updateTreeMaterial()
+        if (animateIso) {
+          if (_time) {
+            const dt = time - _time
+            t = (t + dt/4000) % 1
+          } else {
+            t = 0
+          }
+          const iso = mpow(animateIso, t)
+          updateTree(gens, colors, depth, iso)
+          _time = time
+        } else {
+          dirty = false
+          _time = undefined
+        }
+
+        matShader.uniforms.offset.value = 0.003 * $cameraPos.length()
         composer.render()
-        dirty = false
       }
     }
 

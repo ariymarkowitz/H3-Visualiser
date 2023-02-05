@@ -19,16 +19,16 @@ export function cadd(a: Complex, b: Complex): Complex {
   return cmplx(a.re + b.re, a.im + b.im)
 }
 
+export function cradd(a: Complex, b: number): Complex {
+  return cmplx(a.re + b, a.im)
+}
+
 export function csub(a: Complex, b: Complex): Complex {
   return cmplx(a.re - b.re, a.im - b.im)
 }
 
 export function cneg(a: Complex): Complex {
   return cmplx(-a.re, -a.im)
-}
-
-export function csum(a: Complex, b: Complex): Complex {
-  return cmplx(a.re + b.re, a.im + b.im)
 }
 
 export function cnorm(a: Complex): number {
@@ -44,7 +44,7 @@ export function cdot(a: Complex, b: Complex): number {
 }
 
 export function cdiv(a: Complex, b: Complex): Complex {
-  const n = cnorm(b)
+  const n = cnormsq(b)
   return cmplx((a.re * b.re + a.im * b.im) / n, (b.re * a.im - b.im * a.re) / n)
 }
 
@@ -70,12 +70,36 @@ export function csqr(a: Complex): Complex {
   return cmul(a, a)
 }
 
+export function csqrt(z: Complex): Complex {
+  if (z.im === 0 && z.re <= 0) {
+    return cmplx(0, Math.sqrt(-z.re))
+  }
+  const r = cnorm(z)
+  const mul = Math.sqrt(r/((z.re+r)**2 + z.im**2))
+  return cmplx((z.re+r)*mul, z.im*mul)
+}
+
 export function cIsOne(a: Complex, e = 0) {
   return Math.abs(a.re - 1) <= e && Math.abs(a.im) <= e
 }
 
 export function cIsZero(a: Complex, e = 0) {
   return Math.abs(a.re) <= e && Math.abs(a.im) <= e
+}
+
+export function cequal(a: Complex, b: Complex) {
+  return a.re === b.re && a.im === b.im
+}
+
+export function cclone(a: Complex) {
+  return cmplx(a.re, a.im)
+}
+
+export function cpow(z: Complex, exp: number) {
+  const r = cnorm(z)
+  const newtheta = Math.atan2(z.im, z.re)*exp
+  const newr = r**exp
+  return cmplx(newr * Math.cos(newtheta), newr * Math.sin(newtheta))
 }
 
 export type CMat = [Complex, Complex, Complex, Complex]
@@ -125,6 +149,10 @@ export function det(a: CMat): Complex {
   return csub(cmul(a[0], a[3]), cmul(a[1], a[2]))
 }
 
+export function tr(a: CMat): Complex {
+  return cadd(a[1], a[2])
+}
+
 export function mIsSingular(a: CMat): boolean {
   return cnorm(det(a)) < 1e-10
 }
@@ -146,6 +174,50 @@ export function mdiv(a: CMat, b: CMat): CMat {
 
 export function mId(): CMat {
   return [cmplx(1, 0), cmplx(0, 0), cmplx(0, 0), cmplx(1, 0)]
+}
+
+export function mclone(m: CMat): CMat {
+  return [cclone(m[0]), cclone(m[1]), cclone(m[2]), cclone(m[3])]
+}
+
+/**
+ * Finds U, V = diag(eig1, eig2) such that m = U^-1 V U.
+ * @param m The matrix to diagonalise
+ */
+export function mdecomp(m: CMat): {U: CMat, eig1: Complex, eig2: Complex} {
+  // Dirty hack. Shift the values slightly if it is parabolic.
+  if (cnormsq(tr(m))-4*cnorm(det(m)) < 1e-8) {
+    m = mclone(m)
+    m[3].re += 1e-4
+  }
+  const Delta = crdiv(csub(m[0], m[3]), 2)
+  const d = csqrt(cadd(csqr(Delta), cmul(m[1], m[2])))
+  if (cnormsq(cadd(Delta, d)) < cnormsq(csub(Delta, d))) {
+    d.re = -d.re
+    d.im = -d.im
+  }
+  const t1 = cdiv(m[1], cadd(Delta, d))
+  const t2 = cdiv(m[2], cadd(Delta, d))
+
+  const delta = cdiv(cmul(m[1], m[2]), cadd(Delta, d))
+  const eig1 = cadd(m[0], delta)
+  const eig2 = csub(m[3], delta)
+
+  const den = csqrt(cradd(cmul(t1, t2), 1))
+
+  const c = cinv(den)
+  const U: CMat = [c, cmul(c, t1), cmul(c, cneg(t2)), c]
+
+  return {U, eig1, eig2}
+}
+
+export function mpow(m: CMat, n: number): CMat {
+  const {U, eig1, eig2} = mdecomp(m)
+  return mmul(minv(U), mmul(diag(cpow(eig1, n), cpow(eig2, n)), U))
+}
+
+export function diag(a: Complex, b: Complex): CMat {
+  return [a, cmplx(0, 0), cmplx(0, 0), b]
 }
 
 export type ComplexConvert = number | Complex
@@ -179,6 +251,13 @@ export function cMatrix(
 
 export function mIsId(a: CMat, e = 0) {
   return cIsOne(a[0], e) && cIsZero(a[1], e) && cIsZero(a[2], e) && cIsOne(a[3], e)
+}
+
+export function mequal(a: CMat, b: CMat) {
+  return cequal(a[0], b[0])
+    && cequal(a[1], b[1])
+    && cequal(a[2], b[2])
+    && cequal(a[3], b[3])
 }
 
 export interface Vec3 {

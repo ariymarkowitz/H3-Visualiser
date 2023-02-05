@@ -53,13 +53,16 @@
       focus.element.setState(complex(e.detail.x, e.detail.y))
     }
   }
+
+  let animate: number = 0
+  $: animateIso = [undefined, mat1input, mat2input][animate]
 </script>
 
 <svelte:body use:variables={$themeCSS} />
 <div class="container">
   <div class="render-container">
     {#if browser}
-      <Renderer width={800} height={800} {gens} {colors} {depth} />
+      <Renderer bind:animateIso={animateIso} width={800} height={800} {gens} {colors} {depth} />
     {/if}
   </div>
   <div class="sidebar">
@@ -93,6 +96,14 @@
           <option>{theme.name}</option>
         {/each}
       </select>
+    </div>
+    <div class="sidebar-row">
+      <button on:click={() => animate = (animate === 1) ? 0 : 1}>
+        {animate === 1 ? "Stop animation" : "Animate! (1)"}
+      </button>
+      <button on:click={() => animate = (animate === 2) ? 0 : 2}>
+        {animate === 2 ? "Stop animation" : "Animate! (2)"}
+      </button>
     </div>
   </div>
 </div>

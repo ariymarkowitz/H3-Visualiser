@@ -1,3 +1,4 @@
+import { writable } from 'svelte/store'
 import * as THREE from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2'
@@ -15,6 +16,7 @@ import {
   type Vec3
 } from './math/complex'
 import { geodesic, mobius, toBall } from './math/h3-math'
+import { onDefined } from './utils/storeutils'
 
 interface TreeData {
   vertexColors: number[]
@@ -23,14 +25,26 @@ interface TreeData {
   lines: number[]
 }
 
+export interface TreeUniforms {
+  fadeColor: number[]
+  fadeNear: number
+  fadeFar: number
+  fadeStrength: number
+}
+
 export class CayleyTree {
-  mesh: LineSegments2
+  origin = quat(0, 0, 1, 0)
+
+  mesh: LineSegments2 | undefined
   geometry: LineSegmentsGeometry
   generators: CMat[] = []
   depth = 0
 
   colors: THREE.Color[] = []
   minSize = 0.015
+  
+  uniforms = writable<TreeUniforms>()
+  ready = writable(false)
 
   constructor(width: number, height: number) {
     const material = new LineMaterial({
@@ -57,17 +71,33 @@ export class CayleyTree {
       ` +
         last
     }
-    material.uniforms.fadeColor = { value: [1, 1, 1] }
-    material.uniforms.fadeNear = { type: 'f', value: 0.5 } as any
-    material.uniforms.fadeFar = { type: 'f', value: 2 } as any
-    material.uniforms.fadeStrength = { type: 'f', value: 0.5 } as any
-
+    material.uniforms.fadeColor = { value: undefined }
+    material.uniforms.fadeNear = { type: 'f', value: undefined } as any
+    material.uniforms.fadeFar = { type: 'f', value: undefined } as any
+    material.uniforms.fadeStrength = { type: 'f', value: undefined } as any
+    this.uniforms.subscribe((value) => {
+      if (!value) return
+      material.uniforms.fadeColor.value = value.fadeColor
+      material.uniforms.fadeNear.value = value.fadeNear
+      material.uniforms.fadeFar.value = value.fadeFar
+      material.uniforms.fadeStrength.value = value.fadeStrength
+    })
     this.geometry = new LineSegmentsGeometry()
-
-    this.mesh = new LineSegments2(this.geometry, material)
+    onDefined(this.uniforms, () => {
+      this.mesh = new LineSegments2(this.geometry, material)
+      this.ready.set(true)
+    })
   }
 
-  setGeometry(gens: CMat[], colors: THREE.Color[], depth: number) {
+  onReady(fn: () => void) {
+    const unsub = this.ready.subscribe((value) => {
+      if (!value) return
+      fn()
+      unsub()
+    })
+  }
+
+  setGeometry(gens: CMat[], colors: THREE.Color[], depth: number, start: CMat = mId()) {
     this.generators = gens.map((g) => [g, minv(g)]).flat()
     this.depth = depth
     this.colors = colors
@@ -78,13 +108,15 @@ export class CayleyTree {
       lineColors: [],
       lines: []
     }
-    this._tree(0, 1, undefined, quat(0, 0, 1, 0), mId(), vec3(0, 0, 1), data)
+    const startQuat = mobius(start)
+    this._tree(0, 1, undefined, startQuat, start, toBall(startQuat), data)
 
+    this.geometry.dispose()
     this.geometry = new LineSegmentsGeometry()
 
     this.geometry.setPositions(data.lines)
     this.geometry.setColors(data.lineColors)
-    this.mesh.geometry = this.geometry
+    if (this.mesh) this.mesh.geometry = this.geometry
   }
 
   _tree(
