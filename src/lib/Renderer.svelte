@@ -8,6 +8,7 @@
   import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
   import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass'
   import { CopyShader } from 'three/examples/jsm/shaders/CopyShader'
+  import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader'
   import { theme } from '../style/themes/themes'
   import { CayleyTree, type TreeUniforms } from './CayleyTree'
   import { mpow, type CMat } from './math/complex'
@@ -142,8 +143,12 @@
     const mask2 = new MaskPass(maskScene2, camera)
     mask.inverse = true
     const clearMask = new ClearMaskPass()
-    const copyPass = new ShaderPass(CopyShader)
-    copyPass.renderToScreen = true
+
+    const fxaaPass = new ShaderPass(FXAAShader)
+    fxaaPass.renderToScreen = true
+    const pixelRatio = renderer.getPixelRatio()
+    fxaaPass.material.uniforms[ 'resolution' ].value.x = 1 / ( width * pixelRatio )
+    fxaaPass.material.uniforms[ 'resolution' ].value.y = 1 / ( height * pixelRatio )
 
     const composer = new EffectComposer(renderer)
     composer.renderTarget1.stencilBuffer = true
@@ -154,7 +159,7 @@
     composer.addPass(mask)
     composer.addPass(outline)
     composer.addPass(clearMask)
-    composer.addPass(copyPass)
+    composer.addPass(fxaaPass)
 
     id = requestAnimationFrame(animate)
     controls.addEventListener('change', setDirty)
