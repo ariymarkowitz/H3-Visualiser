@@ -107,7 +107,7 @@
     </div>
   </div>
   <a href="https://github.com/ariymarkowitz/H3-Visualiser" class="github" draggable=false target="_blank" rel="noopener noreferrer">
-    <img src="/{$theme.ui.githubImage}" alt="link to github" width="40" height="40" draggable=false />
+    <img src="{$theme.ui.githubImage}" alt="Link to GitHub" width="40" height="40" draggable=false />
   </a>
 </div>
 
