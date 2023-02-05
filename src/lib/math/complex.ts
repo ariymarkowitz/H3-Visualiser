@@ -150,7 +150,7 @@ export function det(a: CMat): Complex {
 }
 
 export function tr(a: CMat): Complex {
-  return cadd(a[1], a[2])
+  return cadd(a[0], a[3])
 }
 
 export function mIsSingular(a: CMat): boolean {
