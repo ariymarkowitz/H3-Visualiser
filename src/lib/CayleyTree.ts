@@ -14,7 +14,7 @@ import {
   type CMat,
   type Quaternion,
   type Vec3
-} from './math/complex'
+} from './math/math'
 import { geodesic, mobius, toBall } from './math/h3-math'
 import { onDefined } from './utils/storeutils'
 

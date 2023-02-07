@@ -7,11 +7,10 @@
   import { ClearMaskPass, MaskPass } from 'three/examples/jsm/postprocessing/MaskPass'
   import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
   import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass'
-  import { CopyShader } from 'three/examples/jsm/shaders/CopyShader'
   import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader'
   import { theme } from '../style/themes/themes'
   import { CayleyTree, type TreeUniforms } from './CayleyTree'
-  import { mpow, type CMat } from './math/complex'
+  import { mpow, type CMat } from './math/math'
   import { cached } from './ui/cached'
 
   export let width: number
@@ -110,7 +109,6 @@
     // shader
     const outlineUniforms = {
       offset: {
-        type: 'f',
         value: 0.01
       },
       color: {

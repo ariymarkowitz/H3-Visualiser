@@ -6,7 +6,7 @@
 </script>
 
 <script lang="ts">
-  import type { CMat, Complex } from '$lib/math/complex'
+  import type { CMat, Complex } from '$lib/math/math'
   import { createEventDispatcher } from 'svelte'
   import ComplexInput from './ComplexInput.svelte'
 
