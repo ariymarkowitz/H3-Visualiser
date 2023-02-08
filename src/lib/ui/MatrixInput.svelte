@@ -6,48 +6,52 @@
 </script>
 
 <script lang="ts">
-  import type { CMat, Complex } from '$lib/math/math'
+  import { complex, makedet1, type CMat, type Complex } from '$lib/math/math'
   import { createEventDispatcher } from 'svelte'
   import ComplexInput from './ComplexInput.svelte'
 
-  let state00Elt: ComplexInput
-  let state01Elt: ComplexInput
-  let state10Elt: ComplexInput
-  let state11Elt: ComplexInput
-
-  $: stateElts = [state00Elt, state01Elt, state10Elt, state11Elt]
+  const entryElements: ComplexInput[] = new Array(4)
+  const entries: (Complex | undefined)[] = new Array(4)
 
   export let state: CMat | undefined = undefined
-  let state00: Complex | undefined
-  let state01: Complex | undefined
-  let state10: Complex | undefined
-  let state11: Complex | undefined
+  $: state = entries.every(Boolean) ? entries as CMat : undefined
 
   export function setField(index: number, value: Complex) {
-    stateElts[index].setState(value)
+    entryElements[index].setState(value)
   }
 
   const dispatch = createEventDispatcher()
   function focus(i: number) {
     dispatch('focus', {
-      target: stateElts[i],
+      target: entryElements[i],
       state: state ? state[i] : undefined
     } as MatrixInputEvent)
   }
 
-  $: if (state00 && state01 && state10 && state11) {
-    state = [state00, state01, state10, state11]
-  } else {
-    state = undefined
+  function keydown(i: number, e: Event) {
+    const key = (e as KeyboardEvent).key
+    if (key === 'd') {
+      fillWithDet1(i)
+    }
+  }
+
+  function fillWithDet1(i: number) {
+    const sanitised = entries.map(z => z || complex(0)) as CMat
+    const result = makedet1(sanitised, i)
+    if (result) entryElements[i].setState(result)
   }
 </script>
 
 <div class="matrix-input-container">
   <div class="matrix-input">
-    <ComplexInput bind:this={state00Elt} bind:state={state00} on:focus={() => focus(0)} />
-    <ComplexInput bind:this={state01Elt} bind:state={state01} on:focus={() => focus(1)} />
-    <ComplexInput bind:this={state10Elt} bind:state={state10} on:focus={() => focus(2)} />
-    <ComplexInput bind:this={state11Elt} bind:state={state11} on:focus={() => focus(3)} />
+    {#each [0, 1, 2, 3] as i}
+      <ComplexInput
+      bind:this={entryElements[i]}
+      bind:state={entries[i]}
+      on:focus={() => focus(i)}
+      on:keydown={(e) => keydown(i, e)}
+      />
+    {/each}
   </div>
 </div>
 

@@ -19,13 +19,13 @@ import {
   vnormalize,
   vnormsq,
   vrdiv_,
-  vrmult,
+  vrmul,
   vsub,
   type CMat,
   type Complex,
   type Quaternion,
   type Vec3
-} from './complex'
+} from './math'
 
 export function cmplxToQuat(c: Complex): Quaternion {
   return quat(c.re, c.im, 0, 0)
@@ -96,7 +96,7 @@ export function geodesic(a: Quaternion, b: Quaternion, divisions: number, arr: n
     return
   }
 
-  const center = vrmult(mid, (1 + vdistsq(x, y) / midn) / 2)
+  const center = vrmul(mid, (1 + vdistsq(x, y) / midn) / 2)
 
   const rel1 = vsub(p1, center)
   const rel2 = vsub(p2, center)

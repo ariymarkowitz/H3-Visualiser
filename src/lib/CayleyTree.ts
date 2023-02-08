@@ -10,7 +10,6 @@ import {
   mmul,
   quat,
   vdist,
-  vec3,
   type CMat,
   type Quaternion,
   type Vec3

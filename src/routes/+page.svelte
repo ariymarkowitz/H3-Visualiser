@@ -1,6 +1,6 @@
 <script lang="ts">
   import { browser } from '$app/environment'
-  import { complex, mIsSingular, type CMat, type Complex } from '$lib/math/complex'
+  import { complex, mIsSingular, type CMat, type Complex } from '$lib/math/math'
   import type ComplexInput from '$lib/ui/ComplexInput.svelte'
   import PlaneInput, { type Point } from '$lib/ui/PlaneInput.svelte'
   import { variables } from 'svelte-styling'

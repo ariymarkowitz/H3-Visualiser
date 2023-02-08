@@ -27,6 +27,10 @@ export function csub(a: Complex, b: Complex): Complex {
   return cmplx(a.re - b.re, a.im - b.im)
 }
 
+export function crsub(a: Complex, b: number): Complex {
+  return cmplx(a.re - b, a.im)
+}
+
 export function cneg(a: Complex): Complex {
   return cmplx(-a.re, -a.im)
 }
@@ -260,6 +264,21 @@ export function mequal(a: CMat, b: CMat) {
     && cequal(a[3], b[3])
 }
 
+export function makedet1(m: CMat, i: number): Complex | undefined {
+  if (cIsZero(m[3-i])) return undefined
+  if (i === 0) {
+    return cdiv(cradd(cmul(m[1], m[2]), 1), m[3])
+  } else if (i === 1) {
+    return cdiv(crsub(cmul(m[0], m[3]), 1), m[2])
+  } else if (i === 2) {
+    return cdiv(crsub(cmul(m[0], m[3]), 1), m[1])
+  } else if (i === 3) {
+    return cdiv(cradd(cmul(m[1], m[2]), 1), m[0])
+  }
+  throw new Error("Index is out of range");
+  
+}
+
 export interface Vec3 {
   x: number
   y: number
@@ -284,7 +303,7 @@ export function vsub(a: Vec3, b: Vec3): Vec3 {
   return vec3(a.x - b.x, a.y - b.y, a.z - b.z)
 }
 
-export function vrmult(a: Vec3, b: number): Vec3 {
+export function vrmul(a: Vec3, b: number): Vec3 {
   return vec3(a.x * b, a.y * b, a.z * b)
 }
 
@@ -370,7 +389,7 @@ export function qnormalize_(q: Quaternion): void {
   qrdiv_(q, qnorm(q))
 }
 
-export function qmult(a: Quaternion, b: Quaternion) {
+export function qmul(a: Quaternion, b: Quaternion) {
   return quat(
     a.r * b.r - a.i * b.i - a.j * b.j - a.k * b.k,
     a.r * b.i + a.i * b.r + a.j * b.k - a.k * b.j,
