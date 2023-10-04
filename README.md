@@ -16,6 +16,8 @@ PSL(2, ℂ) (the group of 2x2 invertible complex matrices, up to scaling) has a 
 
 - The matrix inputs 'Isometry 1' and 'Isometry 2' control the generators of the group. Each entry can be an integer, decimal, imaginary, or complex number (eg. '-1.29', '1 - 1.4i').
 
+- Pressing 'd' in a matrix entry will set it to a value that makes the determinant 1, if possible.
+
 - The 2D number input allows for choosing a complex number for a selected entry. To use it, click on the matrix entry you wish to change and then click or drag inside the 2D input box.
 
 - The Poincare ball may be rotated by dragging the mouse, and scaled by scrolling.
