@@ -15,7 +15,7 @@
   // The numeric state of the field.
   export let state: number = init
   // The value displayed in the field.
-  export let value: string = init.toString()
+  let value: string = ''
 
   // The value used by the increment buttons.
   let incrementState: number = state

@@ -16,8 +16,8 @@
   export let state: CMat | undefined = undefined
   $: state = entries.every(Boolean) ? entries as CMat : undefined
 
-  export function setField(index: number, value: Complex) {
-    entryElements[index].setState(value)
+  export function setEntries(entries: CMat) {
+    entryElements.forEach((elt, i) => elt.setState(entries[i]))
   }
 
   const dispatch = createEventDispatcher()

@@ -1,32 +1,36 @@
 <script lang="ts">
   import { cIsZero, complex, type Complex } from '$lib/math/math'
-  import { createEventDispatcher } from 'svelte'
 
   const partialMatch = /^\s*([+-]?\s*(\d+(\.\d*)?|\.\d+)?)?\s*([+-]?\s*(\d+(\.\d*)?|\.\d+)?i?)?\s*$/
   const fullMatch =
     /^\s*(((?<re_sign>[+-])?\s*(?<re>\d+(\.\d*)?|\.\d+))\s*((?<im_sign>[+-])\s*(?<im>\d+(\.\d*)?|\.\d+)?\s*(?<has_imag>i))?|(?<im_sign2>[+-]?)?\s*(?<im2>\d+(\.\d*)?|\.\d+)?\s*(?<has_imag2>i))\s*$/
-
-  const dispatch = createEventDispatcher()
 
   // The value displayed in the field.
   export let value = ''
   // The numeric state of the field.
   export let state: Complex = parse(value)
 
-  export function toString(z: Complex) {
-    state = complex(z.re === 0 ? 0 : z.re, z.im === 0 ? 0 : z.im)
-    if (cIsZero(z)) return `0`
-    if (z.re === 0) return `${z.im.toFixed(2)}i`
-    if (z.im === 0) return `${z.re.toFixed(2)}`
-    return `${z.re.toFixed(2)}${z.im >= 0 ? '+' : '-'}${Math.abs(z.im).toFixed(2)}i`
-  }
-
-  export function setState(z: Complex) {
-    value = toString(z)
+  export function setState(z: Complex, precise?: boolean) {
+    state = z
+    value = toString(z, precise)
   }
 
   let input: string
   $: input = value
+
+  function parseFloatShort(n: number) {
+    const precision = Math.min(2, n.toString().split(".")[1]?.length || 0);
+    return n.toFixed(precision);
+  }
+
+  function toString(z: Complex, precise = false) {
+    const parseNumber: (n: number) => string =
+      precise ? n => n.toString() : parseFloatShort
+    if (cIsZero(z)) return `0`
+    if (z.re === 0) return `${parseNumber(z.im)}i`
+    if (z.im === 0) return parseNumber(z.re)
+    return `${parseNumber(z.re)}${z.im >= 0 ? '+' : '-'}${parseNumber(Math.abs(z.im))}i`
+  }
 
   function validateInput(e: any) {
     const newInput = e.target.value
