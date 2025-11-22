@@ -6,6 +6,7 @@ export default {
     border: 'rgba(255, 255, 255, 0.6)',
     focusBorder: '#fff',
     thickBorder: '#fff',
+    lightBorder: 'rgba(255, 255, 255, 0.3)',
     githubImage: 'github-mark-white.svg'
   },
   canvas: {

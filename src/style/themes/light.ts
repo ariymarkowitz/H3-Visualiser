@@ -1,3 +1,5 @@
+import { lightPosition } from 'three/src/nodes/TSL.js';
+
 export default {
   name: 'Light',
   ui: {
@@ -6,6 +8,7 @@ export default {
     border: 'rgba(0, 0, 0, 0.6)',
     focusBorder: 'rgb(0, 135, 255)',
     thickBorder: 'rgba(0, 0, 0, 0.8)',
+    lightBorder: 'rgba(0, 0, 0, 0.2)',
     githubImage: 'github-mark.svg'
   },
   canvas: {

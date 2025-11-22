@@ -1,17 +1,17 @@
 
-:global(body) {
+body {
   color: var(--textColor);
   background-color: var(--bgColor);
   font: 15px sans-serif;
   margin: 0;
 }
-:global(hr) {
+hr {
   border: none;
   width: 80%;
   height: 1px;
   background-color: var(--borderColor);
 }
-:global(input[type='text'], select, button) {
+input[type='text'], select, button {
   font: inherit;
   background-color: inherit;
   color: inherit;
@@ -22,20 +22,20 @@
   border-radius: 4px;
 }
 
-:global(*:disabled) {
+*:disabled {
   opacity: 0.7;
 }
 
-:global(input[type='text']:focus, select:focus) {
+input[type='text']:focus, select:focus {
   outline: none;
   border-color: var(--focusBorderColor);
 }
 
-:global(option) {
+option {
   background-color: var(--bgColor);
 }
 
-:global(input[type='checkbox']) {
+input[type='checkbox'] {
   appearance: none;
   flex-shrink: 0;
   display: grid;
@@ -47,12 +47,12 @@
   background-color: none;
 }
 
-:global(input[type='checkbox']::before) {
+input[type='checkbox']::before {
   content: '';
   width: 10px;
   height: 10px;
 }
 
-:global(input[type='checkbox']:checked::before) {
+input[type='checkbox']:checked::before {
   background-color: white;
 }

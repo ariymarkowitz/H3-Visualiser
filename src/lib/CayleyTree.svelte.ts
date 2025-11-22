@@ -1,8 +1,7 @@
-import { writable } from 'svelte/store'
 import * as THREE from 'three'
-import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
-import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2'
-import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry'
+import { LineMaterial } from 'three/addons/lines/LineMaterial.js'
+import { LineSegments2 } from 'three/addons/lines/LineSegments2.js'
+import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js'
 import {
   mId,
   minv,
@@ -15,7 +14,6 @@ import {
   type Vec3
 } from './math/math'
 import { geodesic, mobius, toBall } from './math/h3-math'
-import { onDefined } from './utils/storeutils'
 
 interface TreeData {
   vertexColors: number[]
@@ -35,15 +33,15 @@ export class CayleyTree {
   origin = quat(0, 0, 1, 0)
 
   mesh: LineSegments2 | undefined
-  geometry: LineSegmentsGeometry
+  geometry?: LineSegmentsGeometry
   generators: CMat[] = []
   depth = 0
 
   colors: THREE.Color[] = []
   minSize = 0.015
   
-  uniforms = writable<TreeUniforms>()
-  ready = writable(false)
+  uniforms: TreeUniforms | undefined = $state()
+  ready: boolean = $state(false)
 
   constructor(width: number, height: number) {
     const material = new LineMaterial({
@@ -74,25 +72,21 @@ export class CayleyTree {
     material.uniforms.fadeNear = { type: 'f', value: undefined } as any
     material.uniforms.fadeFar = { type: 'f', value: undefined } as any
     material.uniforms.fadeStrength = { type: 'f', value: undefined } as any
-    this.uniforms.subscribe((value) => {
-      if (!value) return
-      material.uniforms.fadeColor.value = value.fadeColor
-      material.uniforms.fadeNear.value = value.fadeNear
-      material.uniforms.fadeFar.value = value.fadeFar
-      material.uniforms.fadeStrength.value = value.fadeStrength
+    $effect(() => {
+      if (!this.uniforms) {
+        this.ready = false
+        return
+      }
+      material.uniforms.fadeColor.value = this.uniforms.fadeColor
+      material.uniforms.fadeNear.value = this.uniforms.fadeNear
+      material.uniforms.fadeFar.value = this.uniforms.fadeFar
+      material.uniforms.fadeStrength.value = this.uniforms.fadeStrength
     })
     this.geometry = new LineSegmentsGeometry()
-    onDefined(this.uniforms, () => {
+    $effect(() => {
+      if (!this.uniforms || this.ready) return
       this.mesh = new LineSegments2(this.geometry, material)
-      this.ready.set(true)
-    })
-  }
-
-  onReady(fn: () => void) {
-    const unsub = this.ready.subscribe((value) => {
-      if (!value) return
-      fn()
-      unsub()
+      this.ready = true
     })
   }
 
@@ -110,7 +104,7 @@ export class CayleyTree {
     const startQuat = mobius(start)
     this._tree(0, 1, undefined, startQuat, start, toBall(startQuat), data)
 
-    this.geometry.dispose()
+    if (this.geometry) this.geometry.dispose()
     this.geometry = new LineSegmentsGeometry()
 
     this.geometry.setPositions(data.lines)

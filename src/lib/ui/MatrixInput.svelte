@@ -1,68 +1,78 @@
-<script lang="ts" context="module">
-  export interface MatrixInputEvent {
-    target: ComplexInput
-    state?: Complex
-  }
+<script lang="ts" module>
+  import { cequal, complex, type CMat, type Complex } from '../math/math';
+  import ComplexInput from './ComplexInput.svelte'
+
+  export type MatrixInputEvent = CustomEvent<{ index: number; value: Complex | undefined }>
+  export type MatrixFocusEvent = CustomEvent<number | undefined>
+  export type MatrixKeyEvent = CustomEvent<{ index: number; key: string }>
 </script>
 
 <script lang="ts">
-  import { complex, makedet1, type CMat, type Complex } from '$lib/math/math'
-  import { createEventDispatcher } from 'svelte'
-  import ComplexInput from './ComplexInput.svelte'
+  type MatrixInputProps = {
+    oneltchange?: (e: MatrixInputEvent) => void
+    onfocus?: (e: MatrixFocusEvent) => void
+    onkeydown?: (e: MatrixKeyEvent) => void
+  }
+  let { oneltchange = _ => {}, onfocus = _ => {}, onkeydown = _ => {} }: MatrixInputProps = $props()
+  let entryElts: ComplexInput[] = $state(new Array(4))
+  let focus: number | undefined = $state()
 
-  const entryElements: ComplexInput[] = new Array(4)
-  const entries: (Complex | undefined)[] = new Array(4)
-
-  export let state: CMat | undefined = undefined
-  $: state = entries.every(Boolean) ? entries as CMat : undefined
-
-  export function setEntries(entries: CMat) {
-    entryElements.forEach((elt, i) => elt.setState(entries[i]))
+  export const set = (mat: CMat) => {
+    mat.forEach((z, i) => {
+      entryElts[i].set(z)
+    })
   }
 
-  const dispatch = createEventDispatcher()
-  function focus(i: number) {
-    dispatch('focus', {
-      target: entryElements[i],
-      state: state ? state[i] : undefined
-    } as MatrixInputEvent)
+  export const setEntry = (index: number, z: Complex) => {
+    entryElts[index].set(z)
   }
 
-  function keydown(i: number, e: Event) {
-    const key = (e as KeyboardEvent).key
-    if (key === 'd') {
-      fillWithDet1(i)
-    }
-  }
-
-  function fillWithDet1(i: number) {
-    const sanitised = entries.map(z => z || complex(0)) as CMat
-    const result = makedet1(sanitised, i)
-    if (result) entryElements[i].setState(result)
+  function keydown(i: number, e: KeyboardEvent) {
+    onkeydown(new CustomEvent('keydown', { detail: { index: i, key: e.key } }))
   }
 </script>
 
 <div class="matrix-input-container">
+  <div class="matrix-bracket"></div>
   <div class="matrix-input">
-    {#each [0, 1, 2, 3] as i}
+    {#each [0, 1, 2, 3] as _, i}
       <ComplexInput
-      bind:this={entryElements[i]}
-      bind:state={entries[i]}
-      on:focus={() => focus(i)}
-      on:keydown={(e) => keydown(i, e)}
+      bind:this={entryElts[i]}
+      onfocus={() => {
+        focus = i
+        onfocus(new CustomEvent('focus', { detail: i }))
+      }}
+      onblur={() => {
+        if (focus === i) focus = undefined
+      }}
+      onchange= {e => {
+        oneltchange(new CustomEvent('change', { detail: { index: i, value: e.detail } }))
+      }}
+      onkeydown={e => keydown(i, e)}
       />
     {/each}
   </div>
+  <div class="matrix-bracket"></div>
 </div>
 
-<style lang="scss">
+<style>
   .matrix-input-container {
     display: flex;
     gap: 0.5em;
     align-items: center;
+
+    /* math {
+      font-size: 1.3em;
+      mo[form="prefix"] {
+        margin-right: -0.2em;
+      }
+      mo[form="postfix"] {
+        margin-left: -0.2em;
+      }
+    } */
   }
   
-  .matrix-input {
+  .matrix-input :global {
     display: inline-grid;
     grid-template-columns: repeat(2, 1fr);
     grid-template-rows: repeat(2, 1fr);
@@ -70,7 +80,7 @@
     width: 170px;
     height: 80px;
 
-    :global(input) {
+    input {
         background: none;
         color: inherit;
         border: 1px dashed var(--borderColor);
@@ -78,8 +88,27 @@
         text-align: center;
       }
 
-    :global(input:focus) {
+    input:focus {
       border-color: var(--focusBorderColor);
+    }
+  }
+
+  .matrix-bracket {
+    width: 6px;
+    height: 95px;
+    border: 2px solid var(--thickBorderColor);
+    border-radius: 1px;
+    box-sizing: border-box;
+
+    &:first-child {
+      border-right: none;
+      margin-right: -2px;
+      margin-left: 2px;
+    }
+    &:last-child {
+      border-left: none;
+      margin-left: -2px;
+      margin-right: 2px;
     }
   }
 </style>

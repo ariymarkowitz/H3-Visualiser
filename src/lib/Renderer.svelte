@@ -1,29 +1,34 @@
+<script lang="ts" module>
+  export type RendererProps = {
+    width: number
+    height: number
+    depth: number
+    gens: CMat[]
+    colors: THREE.Color[]
+    animateIso?: CMat
+  }
+</script>
+
 <script lang="ts">
   import { onMount } from 'svelte'
-  import type { Writable } from 'svelte/store'
   import * as THREE from 'three'
-  import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls'
-  import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer'
-  import { ClearMaskPass, MaskPass } from 'three/examples/jsm/postprocessing/MaskPass'
-  import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
-  import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass'
-  import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader'
-  import { theme } from '../style/themes/themes'
-  import { CayleyTree, type TreeUniforms } from './CayleyTree'
+  import { TrackballControls } from 'three/addons/controls/TrackballControls.js'
+  import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
+  import { ClearMaskPass, MaskPass } from 'three/addons/postprocessing/MaskPass.js'
+  import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
+  import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
+  import { FXAAShader } from 'three/addons/shaders/FXAAShader.js'
+  import { CayleyTree } from './CayleyTree.svelte'
   import { mpow, type CMat } from './math/math'
-  import { cached } from './ui/cached'
+  import { memoize } from './utils/memoize.svelte'
+  import { getTheme } from '../style/themes/themes.svelte'
 
-  export let width: number
-  export let height: number
-  export let depth: number
-  export let gens: CMat[] = []
-  export let colors: THREE.Color[] = []
+  let { width, height, depth, gens, colors, animateIso }: RendererProps = $props()
 
-  export let animateIso: CMat | undefined = undefined
   let t = 0
-  $: if (updateTree && !animateIso) {
-    updateTree(gens, colors, depth)
-  }
+  $effect(() => {
+    if (!animateIso) updateTree(gens, colors, depth)
+  })
 
   let dpr = window.devicePixelRatio
 
@@ -31,18 +36,21 @@
   let renderer: THREE.WebGLRenderer
   let id: number
 
-  let treeUniforms: Writable<TreeUniforms>
-  let cameraPos = cached<THREE.Vector3>(undefined, (a, b) => a.equals(b))
-  let updateTree: (gens: CMat[], colors: THREE.Color[], depth: number, iso?: CMat) => void
+  let cameraPos = memoize<THREE.Vector3 | undefined>(undefined, (a, b) => a === b || (a !== undefined && b !== undefined && a.equals(b)))
+  let updateTree: (gens: CMat[], colors: THREE.Color[], depth: number, iso?: CMat) => void = $state(() => {})
  
-  $: if (treeUniforms && $cameraPos) {
-    $treeUniforms = {
-      fadeColor: new THREE.Color($theme.ui.background).toArray(),
-      fadeNear: $cameraPos.length() - 1,
-      fadeFar: $cameraPos.length() + 1,
+  let tree: CayleyTree | undefined = $state()
+
+  $effect(() => {
+    const camPos = cameraPos.get()
+    if (!tree || !camPos) return
+    tree.uniforms = {
+      fadeColor: new THREE.Color(getTheme().ui.background).toArray(),
+      fadeNear: camPos.length() - 1,
+      fadeFar: camPos.length() + 1,
       fadeStrength: 0.7
     }
-  }
+  })
 
   onMount(() => {
     let dirty = true
@@ -71,8 +79,8 @@
     renderer.setSize(width, height, false)
     renderer.setPixelRatio(dpr)
     renderer.setClearColor(0xffffff)
-    theme.subscribe((newTheme) => {
-      renderer.setClearColor(newTheme.ui.background)
+    $effect(() => {
+      renderer.setClearColor(getTheme().ui.background)
       setDirty()
     })
     renderer.autoClear = false
@@ -93,8 +101,9 @@
     const axis = new THREE.AxesHelper(1)
     axis.setColors(new THREE.Color(0xff9999), new THREE.Color(0x66ff66), new THREE.Color(0x9999ff))
     scene.add(axis)
-    theme.subscribe((newTheme) => {
-      const colors = newTheme.canvas.axisColors.map((c) => new THREE.Color(c))
+    
+    $effect(() => {
+      const colors = getTheme().canvas.axisColors.map((c) => new THREE.Color(c))
       axis.setColors(colors[0], colors[1], colors[2])
       setDirty()
     })
@@ -123,8 +132,8 @@
       vertexShader: outShader.vertex_shader,
       fragmentShader: outShader.fragment_shader
     })
-    theme.subscribe((newTheme) => {
-      const c = new THREE.Color(newTheme.canvas.foreground)
+    $effect(() => {
+      const c = new THREE.Color(getTheme().canvas.foreground)
       matShader.uniforms.color.value = [c.r, c.g, c.b, 1]
       setDirty()
     })
@@ -162,23 +171,29 @@
     id = requestAnimationFrame(animate)
     controls.addEventListener('change', setDirty)
 
-    let tree: CayleyTree = new CayleyTree(width, height)
-    treeUniforms = tree.uniforms
+    tree = new CayleyTree(width, height)
     updateTree = (gens, colors, depth, iso) => {
+      if (!tree) return
       tree.setGeometry(gens, colors, depth, iso)
       setDirty()
     }
-    tree.onReady(() => {
+    $effect(() => {
+      if (!tree) return
+      if (!tree.ready) return
       if (!tree.mesh) throw new Error("Mesh is undefined")
       scene.add(tree.mesh)
     })
-    tree.uniforms.subscribe(setDirty)
+    $effect(() => {
+      if (!tree) return
+      if (tree.uniforms) setDirty()
+    })
 
     let _time: number | undefined
     function animate(time: number) {
       id = requestAnimationFrame(animate)
       controls.update()
-      cameraPos.set(camera.position.clone())
+      const camPos = camera.position.clone()
+      cameraPos.set(camPos)
       if (animateIso) dirty = true
       if (dirty) {
         if (animateIso) {
@@ -196,7 +211,7 @@
           _time = undefined
         }
 
-        matShader.uniforms.offset.value = 0.003 * $cameraPos.length()
+        matShader.uniforms.offset.value = 0.003 * camPos.length()
         composer.render()
       }
     }
@@ -214,4 +229,4 @@
   bind:this={canvas}
   width={width * dpr}
   height={height * dpr}
-/>
+></canvas>

@@ -1,48 +1,25 @@
-<script lang="ts">
-  import { cIsZero, complex, type Complex } from '$lib/math/math'
-
+<script lang="ts" module>
+  export type ComplexInputEvent = CustomEvent<Complex | undefined>
   const partialMatch = /^\s*([+-]?\s*(\d+(\.\d*)?|\.\d+)?)?\s*([+-]?\s*(\d+(\.\d*)?|\.\d+)?i?)?\s*$/
-  const fullMatch =
-    /^\s*(((?<re_sign>[+-])?\s*(?<re>\d+(\.\d*)?|\.\d+))\s*((?<im_sign>[+-])\s*(?<im>\d+(\.\d*)?|\.\d+)?\s*(?<has_imag>i))?|(?<im_sign2>[+-]?)?\s*(?<im2>\d+(\.\d*)?|\.\d+)?\s*(?<has_imag2>i))\s*$/
+  const fullMatch = /^\s*(((?<re_sign>[+-])?\s*(?<re>\d+(\.\d*)?|\.\d+))\s*((?<im_sign>[+-])\s*(?<im>\d+(\.\d*)?|\.\d+)?\s*(?<has_imag>i))?|(?<im_sign2>[+-]?)?\s*(?<im2>\d+(\.\d*)?|\.\d+)?\s*(?<has_imag2>i))\s*$/
+</script>
 
-  // The value displayed in the field.
-  export let value = ''
-  // The numeric state of the field.
-  export let state: Complex = parse(value)
+<script lang="ts">
+  import type { HTMLInputAttributes } from 'svelte/elements';
 
-  export function setState(z: Complex, precise?: boolean) {
-    state = z
-    value = toString(z, precise)
-  }
+  import { cIsZero, complex, type Complex } from '../math/math'
 
-  let input: string
-  $: input = value
+  type ComplexInputProps = Omit<HTMLInputAttributes, 'onchange' | 'onfocus' | 'type'> & Partial<{
+    onchange: (event: ComplexInputEvent) => void
+    onfocus: (event: FocusEvent) => void
+  }>
 
-  function parseFloatShort(n: number) {
-    const precision = Math.min(2, n.toString().split(".")[1]?.length || 0);
-    return n.toFixed(precision);
-  }
-
-  function toString(z: Complex, precise = false) {
-    const parseNumber: (n: number) => string =
-      precise ? n => n.toString() : parseFloatShort
-    if (cIsZero(z)) return `0`
-    if (z.re === 0) return `${parseNumber(z.im)}i`
-    if (z.im === 0) return parseNumber(z.re)
-    return `${parseNumber(z.re)}${z.im >= 0 ? '+' : '-'}${parseNumber(Math.abs(z.im))}i`
-  }
-
-  function validateInput(e: any) {
-    const newInput = e.target.value
-    if (isValidInput(input)) {
-      value = newInput
-      state = parse(value)
-    } else {
-      input = value
-    }
-  }
+  let { onchange = _ => {}, onfocus = () => {}, ...rest }: ComplexInputProps = $props()
+  let value: string = $state('')
+  let prevInput: string = $state('')
 
   function isValidInput(input: string) {
+    if (input === '') return true
     return partialMatch.test(input)
   }
 
@@ -68,13 +45,39 @@
     }
     return complex(0)
   }
+
+  function onInput() {
+    if (!isValidInput(value)) {
+      value = prevInput
+      return
+    }
+    prevInput = value
+    const parsed = parse(value)
+    if (parsed) {
+      onchange(new CustomEvent('change', { detail: parsed }))
+    } else {
+      onchange(new CustomEvent('change', { detail: undefined }))
+    }
+  }
+
+  function parseFloatShort(n: number) {
+    const precision = Math.min(2, n.toString().split(".")[1]?.length || 0)
+    return n.toFixed(precision);
+  }
+
+  function toString(z: Complex, precise = false) {
+    const parseNumber: (n: number) => string =
+      precise ? n => n.toString() : parseFloatShort
+    if (cIsZero(z)) return `0`
+    if (z.re === 0) return `${parseNumber(z.im)}i`
+    if (z.im === 0) return parseNumber(z.re)
+    return `${parseNumber(z.re)}${z.im >= 0 ? '+' : '-'}${parseNumber(Math.abs(z.im))}i`
+  }
+
+  export function set(c: Complex) {
+    value = toString(c)
+    prevInput = value
+  }
 </script>
 
-<input
-  class={$$props.class}
-  type="text"
-  bind:value={input}
-  on:input|preventDefault={validateInput}
-  on:keydown
-  on:focus
-/>
+<input type='text' bind:value oninput={onInput} onfocus={onfocus} {...rest} />
