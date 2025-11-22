@@ -31,7 +31,6 @@
 
   let urlReferenceCopied = $state(false)
   watch(() => $state.snapshot([depth, matrices, showIso]), () => {
-    console.log('Resetting urlReferenceCopied to false')
     urlReferenceCopied = false
   })
 
