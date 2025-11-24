@@ -18,7 +18,7 @@ PSL(2, ℂ) (the group of 2x2 invertible complex matrices, up to scaling) has a 
 
 - Pressing 'd' in a matrix entry will set it to a value that makes the determinant 1, if possible.
 
-- The 2D number input allows for choosing a complex number for a selected entry. To use it, click on the matrix entry you wish to change and then click or drag inside the 2D input box.
+- The 2D number input allows for choosing a complex number for a selected entry. To use it, click on the matrix entry you wish to change and then click or drag inside the 2D input box. When the shift key is held, the input snaps to the real or imaginary line passing through the original input value.
 
 - The Poincare ball may be rotated by dragging the mouse, and scaled by scrolling.
 
