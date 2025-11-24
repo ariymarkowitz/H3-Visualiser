@@ -6,7 +6,6 @@
 
 <script lang="ts">
   import type { HTMLInputAttributes } from 'svelte/elements';
-
   import { cIsZero, complex, type Complex } from '../math/math'
 
   type ComplexInputProps = Omit<HTMLInputAttributes, 'onchange' | 'onfocus' | 'type'> & Partial<{

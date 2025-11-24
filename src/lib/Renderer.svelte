@@ -20,7 +20,7 @@
   import { FXAAShader } from 'three/addons/shaders/FXAAShader.js'
   import { CayleyTree } from './CayleyTree.svelte'
   import { mpow, type CMat } from './math/math'
-  import { memoize } from './utils/memoize.svelte'
+  import { createMemo } from './utils/memoize.svelte'
   import { getTheme } from '../style/themes/themes.svelte'
 
   let { width, height, depth, gens, colors, animateIso }: RendererProps = $props()
@@ -36,7 +36,7 @@
   let renderer: THREE.WebGLRenderer
   let id: number
 
-  let cameraPos = memoize<THREE.Vector3 | undefined>(undefined, (a, b) => a === b || (a !== undefined && b !== undefined && a.equals(b)))
+  let cameraPos = createMemo<THREE.Vector3 | undefined>(undefined, (a, b) => a === b || (a !== undefined && b !== undefined && a.equals(b)))
   let updateTree: (gens: CMat[], colors: THREE.Color[], depth: number, iso?: CMat) => void = $state(() => {})
  
   let tree: CayleyTree | undefined = $state()

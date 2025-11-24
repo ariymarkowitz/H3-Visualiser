@@ -1,9 +1,9 @@
-export type Memoize<T> = {
+export type Memo<T> = {
   get: () => T
   set: (newValue: T) => void
 }
 
-export function memoize<T>(init: T, eq: (a: T, b: T) => boolean): Memoize<T> {
+export function createMemo<T>(init: T, eq: (a: T, b: T) => boolean): Memo<T> {
   let value = $state.raw(init)
   return {
     get() {
