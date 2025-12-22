@@ -32,7 +32,7 @@
 
   function setInternal(n: number) {
     if (set(n)) {
-      onchange(new CustomEvent('change', { detail: n }));
+      onchange(new CustomEvent('change', { detail: n }))
     }
   }
   
@@ -62,7 +62,7 @@
     prevInput = value
     if (isValidValue(value)) {
       numericValue = Number(value)
-      onchange(new CustomEvent('change', { detail: numericValue }));
+      onchange(new CustomEvent('change', { detail: numericValue }))
     }
   }
 

@@ -6,11 +6,11 @@
 </script>
 
 <script lang="ts">
-  import { useEventListener } from 'runed';
-  import { onMount, untrack } from 'svelte';
-  import { getTheme, type Theme } from '../../style/themes/themes.svelte';
-  import { cadd, cequal, cnormsq, complex, crmul, csub, type Complex } from '../math/math';
-  import { useAnimationTimer } from '../utils/useAnimationTimer.svelte';
+  import { useEventListener } from 'runed'
+  import { onMount, untrack } from 'svelte'
+  import { getTheme, type Theme } from '../../style/themes/themes.svelte'
+  import { cadd, cequal, cnormsq, complex, crmul, csub, type Complex } from '../math/math'
+  import { useAnimationTimer } from '../utils/useAnimationTimer.svelte'
 
   type Props = {
     onchange?: (c: Complex) => void

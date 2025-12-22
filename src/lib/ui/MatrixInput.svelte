@@ -1,10 +1,10 @@
 <script lang="ts" module>
-  import { cequal, complex, type CMat, type Complex } from '../math/math';
+  import { type CMat, type Complex } from '../math/math'
   import ComplexInput from './ComplexInput.svelte'
 
-  export type MatrixInputEvent = CustomEvent<{ index: number; value: Complex | undefined }>
+  export type MatrixInputEvent = CustomEvent<{ index: number, value: Complex | undefined }>
   export type MatrixFocusEvent = CustomEvent<number | undefined>
-  export type MatrixKeyEvent = CustomEvent<{ index: number; key: string }>
+  export type MatrixKeyEvent = CustomEvent<{ index: number, key: string }>
 </script>
 
 <script lang="ts">

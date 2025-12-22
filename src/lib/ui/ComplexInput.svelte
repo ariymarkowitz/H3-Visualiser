@@ -5,15 +5,15 @@
 </script>
 
 <script lang="ts">
-  import type { HTMLInputAttributes } from 'svelte/elements';
+  import type { HTMLInputAttributes } from 'svelte/elements'
   import { cIsZero, complex, type Complex } from '../math/math'
 
-  type ComplexInputProps = Omit<HTMLInputAttributes, 'onchange' | 'onfocus' | 'type'> & Partial<{
+  type ComplexInputProps = Omit<HTMLInputAttributes, 'onchange' | 'onfocus' | 'type'>& Partial<{
     onchange: (event: ComplexInputEvent) => void
     onfocus: (event: FocusEvent) => void
   }>
 
-  let { onchange = _ => {}, onfocus = () => {}, ...rest }: ComplexInputProps = $props()
+  let { onchange = _ => {}, onfocus = _ => {}, ...rest }: ComplexInputProps = $props()
   let value: string = $state('')
   let prevInput: string = $state('')
 
