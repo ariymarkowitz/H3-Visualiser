@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Color } from 'three'
-  import { complex, makedet1, mIsSingular, type CMat, type Complex } from './lib/math/math'
+  import { makedet1, mId, mIsSingular, type CMat, type Complex } from './lib/math/math'
   import MatrixInput from './lib/ui/MatrixInput.svelte'
   import PlaneInput from './lib/ui/PlaneInput.svelte'
   import StepperInput from './lib/ui/StepperInput.svelte'
@@ -14,22 +14,12 @@
 
   let depthElt: StepperInput
 
-  function identity(): CMat {
-    return [complex(1), complex(0), complex(0), complex(1)]
-  }
-
-  let matrices: [CMat, CMat] = $state([identity(), identity()])
+  let matrices: [CMat, CMat] = $state([mId(), mId()])
   let showIso = $state([false, false])
-  let rawColors = $derived([getTheme().canvas.isometryColors[0], getTheme().canvas.isometryColors[1]])
-  let isoData = $derived(
-    [0, 1].flatMap((i) => {
-      const m = matrices[i]
-      if (mIsSingular(m) || !showIso[i]) return []
-      return [{ m, c: rawColors[i] }]
-    })
-  )
-  let gens = $derived(isoData.map((x) => x.m as CMat))
-  let colors = $derived(isoData.map((x) => x.c.map((c) => new Color(c))).flat())
+  let rawColors = $derived(getTheme().canvas.isometryColors)
+  let activeIdx = $derived([0, 1].filter(i => showIso[i] && !mIsSingular(matrices[i])))
+  let gens = $derived(activeIdx.map(i => matrices[i]))
+  let colors = $derived(activeIdx.flatMap(i => rawColors[i].map(c => new Color(c))))
 
   let depth: number = $state(5)
   let isoFocus: { id: number; elt: number } | undefined = $state()
@@ -49,6 +39,9 @@
     urlReferenceCopied = false
   })
 
+  const MATRIX_KEYS = ['a', 'b'] as const
+  const SHOW_KEYS = ['showa', 'showb'] as const
+
   function parseMatrixParam(params: URLSearchParams, key: string): CMat | undefined {
     const raw = params.get(key)
     if (!raw) return undefined
@@ -57,34 +50,14 @@
     return Array.from({length: 4}, (_, i) => ({re: list[2*i], im: list[2*i+1]})) as CMat
   }
 
-  function parseUrlParams(params: URLSearchParams) {
-    const depthParam = params.get('d')
-    let depth = depthParam ? parseInt(depthParam) : undefined
-    depth = depth && Number.isInteger(depth) && depth >= 1 ? depth : undefined
-
-    const matrix1 = parseMatrixParam(params, 'a')
-    const matrix2 = parseMatrixParam(params, 'b')
-
-    return {
-      depth,
-      matrix1,
-      matrix2,
-      showa: params.get('showa') === '1',
-      showb: params.get('showb') === '1',
-    }
-  }
-
   function copyUrlReference() {
     let params = new URLSearchParams()
     params.append('d', depth.toString())
 
-    if (showIso[0]) {
-      params.append('a', matrices[0].flatMap(z => [z.re, z.im]).join(' '))
-      params.append('showa', '1')
-    }
-    if (showIso[1]) {
-      params.append('b', matrices[1].flatMap(z => [z.re, z.im]).join(' '))
-      params.append('showb', '1')
+    for (let i = 0; i < 2; i++) {
+      if (!showIso[i]) continue
+      params.append(MATRIX_KEYS[i], matrices[i].flatMap(z => [z.re, z.im]).join(' '))
+      params.append(SHOW_KEYS[i], '1')
     }
 
     const url = new URL(window.location.href);
@@ -93,20 +66,24 @@
   }
 
   onMount(() => {
-    const urlParams = parseUrlParams(new URLSearchParams(window.location.search))
-    depthElt.set(urlParams.depth ?? 10)
-    if (urlParams.matrix1) {
-      matrices[0] = urlParams.matrix1
-      showIso[0] = urlParams.showa
-    }
-    if (urlParams.matrix2) {
-      matrices[1] = urlParams.matrix2
-      showIso[1] = urlParams.showb
+    const params = new URLSearchParams(window.location.search)
+    const d = Number(params.get('d'))
+    depthElt.set(Number.isInteger(d) && d >= 1 ? d : 10)
+    for (let i = 0; i < 2; i++) {
+      const m = parseMatrixParam(params, MATRIX_KEYS[i])
+      if (m) {
+        matrices[i] = m
+        showIso[i] = params.get(SHOW_KEYS[i]) === '1'
+      }
     }
   })
 
-  let animate: 0 | 1 | 2 = $state(0)
-  let animateIso = $derived([undefined, ...matrices][animate])
+  let animateIdx: number | undefined = $state()
+  let animateIso = $derived(animateIdx === undefined ? undefined : matrices[animateIdx])
+
+  function toggleAnimate(i: number) {
+    animateIdx = animateIdx === i ? undefined : i
+  }
 
   function matrixMakeDeterminantOne(id: number, elt: number) {
     const result = makedet1(matrices[id], elt)
@@ -156,12 +133,11 @@
       </select>
     </div>
     <div class="sidebar-row">
-      <button onclick={() => animate = (animate === 1) ? 0 : 1}>
-        {animate === 1 ? "Stop animation" : "Animate! (1)"}
-      </button>
-      <button onclick={() => animate = (animate === 2) ? 0 : 2}>
-        {animate === 2 ? "Stop animation" : "Animate! (2)"}
-      </button>
+      {#each [0, 1] as i}
+        <button onclick={() => toggleAnimate(i)}>
+          {animateIdx === i ? "Stop animation" : `Animate! (${i + 1})`}
+        </button>
+      {/each}
     </div>
   </div>
   <a href="https://github.com/ariymarkowitz/H3-Visualiser" class="github" draggable=false target="_blank" rel="noopener noreferrer">

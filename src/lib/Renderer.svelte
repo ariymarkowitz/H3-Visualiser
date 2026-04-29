@@ -61,28 +61,22 @@
   })
 
   $effect(() => {
-    if (!renderer || !setDirty) return
-    renderer.setClearColor(getTheme().ui.background)
+    if (!setDirty) return
+    const theme = getTheme()
+    if (renderer) renderer.setClearColor(theme.ui.background)
+    if (axis) {
+      const [x, y, z] = theme.canvas.axisColors.map((c) => new THREE.Color(c))
+      axis.setColors(x, y, z)
+    }
+    if (matShader) {
+      const c = new THREE.Color(theme.canvas.foreground)
+      matShader.uniforms.color.value = [c.r, c.g, c.b, 1]
+    }
     setDirty()
   })
 
   $effect(() => {
-    if (!axis || !setDirty) return
-    const axisColors = getTheme().canvas.axisColors.map((c) => new THREE.Color(c))
-    axis.setColors(axisColors[0], axisColors[1], axisColors[2])
-    setDirty()
-  })
-
-  $effect(() => {
-    if (!matShader || !setDirty) return
-    const c = new THREE.Color(getTheme().canvas.foreground)
-    matShader.uniforms.color.value = [c.r, c.g, c.b, 1]
-    setDirty()
-  })
-
-  $effect(() => {
-    if (!tree || !scene) return
-    if (!tree.ready) return
+    if (!tree || !scene || !tree.ready) return
     if (!tree.mesh) throw new Error("Mesh is undefined")
     scene.add(tree.mesh)
   })
@@ -94,27 +88,8 @@
 
   onMount(() => {
     let dirty = true
-    const _setDirty = () => (dirty = true)
-    setDirty = _setDirty
-
-    const shader = {
-      outline: {
-        vertex_shader: `
-        uniform float offset;
-        void main() {
-          vec4 pos = modelViewMatrix * vec4( position + normal * offset, 1.0 );
-          gl_Position = projectionMatrix * pos;
-        }
-        `,
-
-        fragment_shader: `
-        uniform vec4 color;
-        void main() {
-          gl_FragColor = color;
-        }
-        `
-      }
-    }
+    const markDirty = () => (dirty = true)
+    setDirty = markDirty
 
     renderer = new THREE.WebGLRenderer({ antialias: true, canvas })
     renderer.setSize(width, height, false)
@@ -157,12 +132,21 @@
       }
     }
 
-    const outShader = shader.outline
-
     matShader = new THREE.ShaderMaterial({
       uniforms: outlineUniforms,
-      vertexShader: outShader.vertex_shader,
-      fragmentShader: outShader.fragment_shader
+      vertexShader: `
+        uniform float offset;
+        void main() {
+          vec4 pos = modelViewMatrix * vec4( position + normal * offset, 1.0 );
+          gl_Position = projectionMatrix * pos;
+        }
+      `,
+      fragmentShader: `
+        uniform vec4 color;
+        void main() {
+          gl_FragColor = color;
+        }
+      `
     })
 
     const outlineMesh = new THREE.Mesh(sphereGeo, matShader)
@@ -196,13 +180,13 @@
     composer.addPass(fxaaPass)
 
     id = requestAnimationFrame(animate)
-    controls.addEventListener('change', _setDirty)
+    controls.addEventListener('change', markDirty)
 
     tree = new CayleyTree(width, height)
     updateTree = (gens, colors, depth, iso) => {
       if (!tree) return
       tree.setGeometry(gens, colors, depth, iso)
-      _setDirty()
+      markDirty()
     }
 
     let _time: number | undefined
@@ -235,12 +219,12 @@
 
     return () => {
       if (id) cancelAnimationFrame(id)
-      controls.removeEventListener('change', _setDirty)
+      controls.removeEventListener('change', markDirty)
       tree?.dispose()
       sphereGeo.dispose()
       sphereMat.dispose()
       matShader?.dispose()
-      composer.passes.forEach(p => { if ('dispose' in p && typeof p.dispose === 'function') p.dispose() })
+      for (const p of composer.passes) p.dispose()
       renderer?.dispose()
     }
   })

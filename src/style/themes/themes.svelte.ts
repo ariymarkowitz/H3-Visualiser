@@ -30,16 +30,17 @@ export function getTheme() {
 export function setThemeByName(name: string) {
   const theme = themes.find((t) => t.name === name) ?? themes[0]
   _theme = theme
-  setTheme(theme)
-}
 
-function setTheme(theme: Theme) {
-  const html = document.documentElement
-  html.style.setProperty('--bgColor', theme.ui.background)
-  html.style.setProperty('--textColor', theme.ui.textColor)
-  html.style.setProperty('--borderColor', theme.ui.border)
-  html.style.setProperty('--focusBorderColor', theme.ui.focusBorder)
-  html.style.setProperty('--thickBorderColor', theme.ui.thickBorder)
-  html.style.setProperty('--isometry1Color', theme.canvas.isometryColors[0][0])
-  html.style.setProperty('--isometry2Color', theme.canvas.isometryColors[1][0])
+  const vars: Record<string, string> = {
+    '--bgColor': theme.ui.background,
+    '--textColor': theme.ui.textColor,
+    '--borderColor': theme.ui.border,
+    '--focusBorderColor': theme.ui.focusBorder,
+    '--thickBorderColor': theme.ui.thickBorder,
+    '--isometry1Color': theme.canvas.isometryColors[0][0],
+    '--isometry2Color': theme.canvas.isometryColors[1][0],
+  }
+  for (const [k, v] of Object.entries(vars)) {
+    document.documentElement.style.setProperty(k, v)
+  }
 }

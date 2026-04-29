@@ -7,7 +7,6 @@ import {
   minv,
   mIsId,
   mmul,
-  quat,
   vdist,
   type CMat,
   type Quaternion,
@@ -30,18 +29,15 @@ export interface TreeUniforms {
 }
 
 export class CayleyTree {
-  origin = quat(0, 0, 1, 0)
-
   mesh: LineSegments2 | undefined
   geometry?: LineSegmentsGeometry
   material: LineMaterial
   generators: CMat[] = []
   depth = 0
 
-  // Pre-extracted [r,g,b] triples per entry in `colors`, rebuilt in setGeometry
-  // so _tree never allocates a THREE.Color per recursion step.
+  // Pre-extracted [r,g,b] triples per generator, rebuilt in setGeometry so
+  // _tree never allocates a THREE.Color per recursion step.
   colorArrays: [number, number, number][] = []
-  colors: THREE.Color[] = []
   minSize = 0.015
 
   uniforms: TreeUniforms | undefined = $state()
@@ -72,19 +68,20 @@ export class CayleyTree {
       ` +
         last
     }
-    this.material.uniforms.fadeColor = { value: undefined }
-    this.material.uniforms.fadeNear = { type: 'f', value: undefined } as any
-    this.material.uniforms.fadeFar = { type: 'f', value: undefined } as any
-    this.material.uniforms.fadeStrength = { type: 'f', value: undefined } as any
+    Object.assign(this.material.uniforms, {
+      fadeColor: { value: undefined },
+      fadeNear: { value: 0 },
+      fadeFar: { value: 0 },
+      fadeStrength: { value: 0 },
+    })
     $effect(() => {
       if (!this.uniforms) {
         this.ready = false
         return
       }
-      this.material.uniforms.fadeColor.value = this.uniforms.fadeColor
-      this.material.uniforms.fadeNear.value = this.uniforms.fadeNear
-      this.material.uniforms.fadeFar.value = this.uniforms.fadeFar
-      this.material.uniforms.fadeStrength.value = this.uniforms.fadeStrength
+      for (const [k, v] of Object.entries(this.uniforms)) {
+        this.material.uniforms[k].value = v
+      }
     })
     this.geometry = new LineSegmentsGeometry()
     $effect(() => {
@@ -94,10 +91,10 @@ export class CayleyTree {
     })
   }
 
-  setGeometry(gens: CMat[], colors: THREE.Color[], depth: number, start: CMat = mId()) {
-    this.generators = gens.flatMap((g) => [g, minv(g)])
+  setGeometry(baseGens: CMat[], colors: THREE.Color[], depth: number, start: CMat = mId()) {
+    // Each generator g is paired with g^-1 so _tree can step in either direction.
+    this.generators = baseGens.flatMap((g) => [g, minv(g)])
     this.depth = depth
-    this.colors = colors
     // Pre-extract RGB arrays once per generator so _tree doesn't allocate per step.
     this.colorArrays = colors.map((c) => [c.r, c.g, c.b])
 

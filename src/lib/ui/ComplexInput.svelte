@@ -21,26 +21,23 @@
     return partialMatch.test(input)
   }
 
+  // Apply optional sign to optional magnitude; missing magnitude means 1
+  // (so e.g. "+i" parses as +1*i).
+  function signed(sign: string | undefined, mag: string | undefined): number {
+    const s = sign === '-' ? -1 : 1
+    return mag ? s * parseFloat(mag) || 0 : s
+  }
+
   function parse(input: string): Complex {
     if (input === '') return complex(0)
     const matches = fullMatch.exec(input)
     if (!matches || !matches.groups) return complex(0)
     const g = matches.groups
     if (g.re) {
-      const re_sign = g.re_sign === '-' ? -1 : 1
-      const re = re_sign * parseFloat(g.re) || 0
-      if (!g.has_imag) return complex(re)
-      const im_sign = g.im_sign === '-' ? -1 : 1
-      if (!g.im) return complex(re, im_sign)
-      const im = im_sign * parseFloat(g.im) || 0
-      return complex(re, im)
+      const re = signed(g.re_sign, g.re)
+      return g.has_imag ? complex(re, signed(g.im_sign, g.im)) : complex(re)
     }
-    if (g.has_imag2) {
-      const im_sign = g.im_sign2 === '-' ? -1 : 1
-      if (!g.im2) return complex(0, im_sign)
-      const im = im_sign * parseFloat(g.im2) || 0
-      return complex(0, im)
-    }
+    if (g.has_imag2) return complex(0, signed(g.im_sign2, g.im2))
     return complex(0)
   }
 

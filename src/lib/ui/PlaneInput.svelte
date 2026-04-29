@@ -21,11 +21,13 @@
   let target: Complex = $state(complex(0))
 
   let canvas: HTMLCanvasElement
-  $effect(() => {
+
+  function syncCanvasSize() {
     const dpr = window.devicePixelRatio || 1
     width = canvas.clientWidth * dpr
     height = canvas.clientHeight * dpr
-  })
+  }
+  $effect(() => syncCanvasSize())
   $effect(() => {
     canvas.width = width
     canvas.height = height
@@ -59,25 +61,12 @@
   }
 
   // Animation loop to smoothly interpolate pos towards target
-  let params: [HTMLCanvasElement, number, number, Theme, Complex, Complex]
   let dz: Complex = $derived(csub(target, pos))
 
-  const anim = useAnimationTimer(dt => update(dt, params))
-  $effect(() => {
-    params = [canvas, width, height, getTheme(), target, dz]
-    anim.start()
-  })
+  const anim = useAnimationTimer(dt => {
+    const factor = 1 - Math.exp(-dt / 90) // 90ms decay
 
-  function update(
-    dt: number,
-    [canvas, width, height, theme, target, dz]: typeof params
-  ) {
-    const decay = 90 // milliseconds
-    const factor = 1 - Math.exp(-dt / decay)
-
-    if (!cequal(pos, target)) {
-      ctrl.emit(pos)
-    }
+    if (!cequal(pos, target)) ctrl.emit(pos)
 
     if (cnormsq(dz) < 1e-4) {
       pos = target
@@ -86,8 +75,13 @@
       pos = cadd(pos, crmul(dz, factor))
     }
 
-    draw(canvas, width, height, theme)
-  }
+    draw(canvas, width, height, getTheme())
+  })
+  $effect(() => {
+    // Touch reactive deps so the timer wakes when they change.
+    void [canvas, width, height, getTheme(), target, dz]
+    anim.start()
+  })
 
   function draw(canvas: HTMLCanvasElement, width: number, height: number, theme: Theme) {
     const ctx = canvas.getContext('2d')
@@ -152,19 +146,13 @@
       }
     })
 
-    const newTarget = $derived.by(() => {
-      if (shift.down) {
-        if (snapAxis === 'x') {
-          // Horizontal movement dominant -> keep Y same as start
-          return complex(freeTarget.re, d.data.startValue.im)
-        } else {
-          // Vertical movement dominant -> keep X same as start
-          return complex(d.data.startValue.re, freeTarget.im)
-        }
-      } else {
-        return freeTarget
-      }
-    })
+    // With shift held, the larger-magnitude axis is followed; the other is
+    // pinned to its drag-start value.
+    const newTarget = $derived(
+      !shift.down ? freeTarget
+        : snapAxis === 'x' ? complex(freeTarget.re, d.data.startValue.im)
+        : complex(d.data.startValue.re, freeTarget.im)
+    )
 
     $effect(() => {
       target = newTarget
@@ -172,17 +160,9 @@
   })
 
   onMount(() => {
-    const resizeObserver = new ResizeObserver(() => {
-      const dpr = window.devicePixelRatio || 1
-      width = canvas.clientWidth * dpr
-      height = canvas.clientHeight * dpr
-    })
-
+    const resizeObserver = new ResizeObserver(syncCanvasSize)
     resizeObserver.observe(canvas, {box: 'device-pixel-content-box'})
-
-    return () => {
-      resizeObserver.disconnect()
-    }
+    return () => resizeObserver.disconnect()
   })
 </script>
 

@@ -155,13 +155,7 @@ export function mId(): CMat {
 export function mdecomp(m: CMat): {U: CMat, eig1: Complex, eig2: Complex} {
   // Dirty hack. Shift the values slightly if it is parabolic.
   if (cnormsq(tr(m))-4*cnorm(det(m)) < 1e-8) {
-    m = [
-      {re: m[0].re, im: m[0].im},
-      {re: m[1].re, im: m[1].im},
-      {re: m[2].re, im: m[2].im},
-      {re: m[3].re, im: m[3].im}
-    ]
-    m[3].re += 1e-4
+    m = [m[0], m[1], m[2], cmplx(m[3].re + 1e-4, m[3].im)]
   }
   const Delta = crdiv(csub(m[0], m[3]), 2)
   const d = csqrt(cadd(csqr(Delta), cmul(m[1], m[2])))
@@ -169,10 +163,11 @@ export function mdecomp(m: CMat): {U: CMat, eig1: Complex, eig2: Complex} {
     d.re = -d.re
     d.im = -d.im
   }
-  const t1 = cdiv(m[1], cadd(Delta, d))
-  const t2 = cdiv(m[2], cadd(Delta, d))
+  const sum = cadd(Delta, d)
+  const t1 = cdiv(m[1], sum)
+  const t2 = cdiv(m[2], sum)
 
-  const delta = cdiv(cmul(m[1], m[2]), cadd(Delta, d))
+  const delta = cdiv(cmul(m[1], m[2]), sum)
   const eig1 = cadd(m[0], delta)
   const eig2 = csub(m[3], delta)
 
@@ -193,26 +188,8 @@ export function diag(a: Complex, b: Complex): CMat {
   return [a, cmplx(0, 0), cmplx(0, 0), b]
 }
 
-export type ComplexConvert = number | Complex
-
-// Converts number, [re, im] array, or Complex to Complex.
-// Always returns a fresh object.
-export function complex(n: ComplexConvert | number[], m?: number) {
-  if (m !== undefined) {
-    if (typeof n !== 'number') {
-      throw new Error("Can't convert to complex number")
-    }
-    return cmplx(n, m)
-  } else if (typeof n === 'object') {
-    if (Array.isArray(n)) {
-      return cmplx(n[0], n[1])
-    } else if ('re' in n && 'im' in n) {
-      return cmplx(n.re, n.im)
-    }
-  } else if (typeof n === 'number') {
-    return cmplx(n, 0)
-  }
-  throw new Error("Can't convert to complex number")
+export function complex(re: number, im: number = 0): Complex {
+  return cmplx(re, im)
 }
 
 export function mIsId(a: CMat, e = 0) {
@@ -221,17 +198,12 @@ export function mIsId(a: CMat, e = 0) {
 
 export function makedet1(m: CMat, i: number): Complex | undefined {
   if (cIsZero(m[3-i])) return undefined
-  if (i === 0) {
-    return cdiv(cradd(cmul(m[1], m[2]), 1), m[3])
-  } else if (i === 1) {
-    return cdiv(crsub(cmul(m[0], m[3]), 1), m[2])
-  } else if (i === 2) {
-    return cdiv(crsub(cmul(m[0], m[3]), 1), m[1])
-  } else if (i === 3) {
-    return cdiv(cradd(cmul(m[1], m[2]), 1), m[0])
-  }
-  throw new Error("Index is out of range");
-
+  // Diagonal (i=0,3): m[i] = (m[1]*m[2] + 1) / m[3-i]
+  // Anti-diagonal (i=1,2): m[i] = (m[0]*m[3] - 1) / m[3-i]
+  const numerator = (i === 0 || i === 3)
+    ? cradd(cmul(m[1], m[2]), 1)
+    : crsub(cmul(m[0], m[3]), 1)
+  return cdiv(numerator, m[3-i])
 }
 
 export interface Vec3 {
@@ -269,25 +241,25 @@ export function vrdiv_(a: Vec3, b: number): Vec3 {
   return a
 }
 
-export function vnorm(v: Vec3): number {
-  return Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
-}
-
 export function vnormsq(v: Vec3): number {
   return v.x * v.x + v.y * v.y + v.z * v.z
 }
 
-export function vnormalize(v: Vec3): Vec3 {
-  const n = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
-  return vec3(v.x / n, v.y / n, v.z / n)
+export function vnorm(v: Vec3): number {
+  return Math.sqrt(vnormsq(v))
 }
 
-export function vdist(a: Vec3, b: Vec3): number {
-  return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2)
+export function vnormalize(v: Vec3): Vec3 {
+  const n = vnorm(v)
+  return vec3(v.x / n, v.y / n, v.z / n)
 }
 
 export function vdistsq(a: Vec3, b: Vec3): number {
   return (a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.z - b.z) ** 2
+}
+
+export function vdist(a: Vec3, b: Vec3): number {
+  return Math.sqrt(vdistsq(a, b))
 }
 
 export function vclone(v: Vec3): Vec3 {
@@ -313,30 +285,8 @@ export function quat(re: number, i: number, j: number, k: number): Quaternion {
   return { r: re, i, j, k }
 }
 
-export function qset(q: Quaternion, re: number, i: number, j: number, k: number): void {
-  q.r = re
-  q.i = i
-  q.j = j
-  q.k = k
-}
-
 export function qnormsq(a: Quaternion) {
   return a.r * a.r + a.i * a.i + a.j * a.j + a.k * a.k
-}
-
-export function qnorm(a: Quaternion) {
-  return Math.sqrt(a.r * a.r + a.i * a.i + a.j * a.j + a.k * a.k)
-}
-
-export function qnormalize_(q: Quaternion): void {
-  qrdiv_(q, qnorm(q))
-}
-
-export function qrdiv_(a: Quaternion, b: number): void {
-  a.r /= b
-  a.i /= b
-  a.j /= b
-  a.k /= b
 }
 
 export function qdiv(a: Quaternion, b: Quaternion) {
@@ -350,20 +300,14 @@ export function qdiv(a: Quaternion, b: Quaternion) {
 }
 
 // Returns the quaternion that rotates unit vector a to unit vector b, then
-// slerped t of the way.
+// slerped t of the way. a and b must be unit length.
 export function qlerp(a: Vec3, b: Vec3, t: number): Quaternion {
-  // Get the quaternion that rotates a to b.
   const d = vdot(a, b)
   if (d === 1) return quat(1, 0, 0, 0)
   const v = vcross(a, b)
-  const q = quat(vnorm(a) * vnorm(b) + vdot(a, b), v.x, v.y, v.z)
-  qnormalize_(q)
-
-  const theta = Math.acos(q.r) * t
-  const norm = vnorm(v)
-  const s = Math.sin(theta) / norm
-  qset(q, Math.cos(theta), v.x * s, v.y * s, v.z * s)
-  return q
+  const half = Math.acos(d) * t / 2
+  const s = Math.sin(half) / vnorm(v)
+  return quat(Math.cos(half), v.x * s, v.y * s, v.z * s)
 }
 
 export function rotate(a: Vec3, q: Quaternion): Vec3 {

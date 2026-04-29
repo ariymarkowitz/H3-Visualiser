@@ -3,7 +3,6 @@
     min: number
     max: number
     init: number
-    valid: (n: number) => boolean
     onchange: (value: number) => void
   }>
 
@@ -11,7 +10,6 @@
     min = 1,
     max = 100,
     init = min,
-    valid = _ => true,
     onchange = _ => {}
   }: StepperInputProps = $props()
 
@@ -28,28 +26,9 @@
     return false
   }
 
-  function setInternal(n: number) {
-    if (set(n)) {
-      onchange(n)
-    }
-  }
-  
-  function increment() {
-    for (let i = numericValue + 1; i <= max; i++) {
-      if (valid(i)) {
-        setInternal(i)
-        return
-      }
-    }
-  }
-
-  function decrement() {
-    for (let i = numericValue - 1; i >= min; i--) {
-      if (valid(i)) {
-        setInternal(i)
-        return
-      }
-    }
+  function step(direction: 1 | -1) {
+    const n = numericValue + direction
+    if (n >= min && n <= max && set(n)) onchange(n)
   }
 
   function onInput() {
@@ -58,33 +37,28 @@
       return
     }
     prevInput = value
-    if (isValidValue(value)) {
-      numericValue = Number(value)
-      onchange(numericValue)
+    if (value !== '') {
+      const n = Number(value)
+      if (n >= min && n <= max) {
+        numericValue = n
+        onchange(n)
+      }
     }
   }
 
   function isValidInput(input: string) {
     if (input === '') return true
-    if (/^(0|[1-9]\d*)$/.test(input)) {
-      const intInput = Number(input)
-      if ((min <= 0 || intInput > 0 ) && intInput <= max) return true
-    }
-    return false
-  }
-
-  function isValidValue(input: string) {
-    if (input === '') return false
+    if (!/^(0|[1-9]\d*)$/.test(input)) return false
     const n = Number(input)
-    return min <= n && max >= n && valid(n)
+    return n <= max
   }
 </script>
 
 <div class='number-input'>
   <input type='text' bind:value oninput={onInput}/>
   <div class='number-input-buttons'>
-    <button type="button" aria-label="Increment" class='number-input-up' onclick={increment}><i></i></button>
-    <button type="button" aria-label="Decrement" class='number-input-down' onclick={decrement}><i></i></button>
+    <button type="button" aria-label="Increment" class='number-input-up' onclick={() => step(1)}><i></i></button>
+    <button type="button" aria-label="Decrement" class='number-input-down' onclick={() => step(-1)}><i></i></button>
   </div>
 </div>
 
