@@ -134,13 +134,13 @@
 
     $effect(() => {
       if (shift.down) {
-        let oldSnap = untrack(() => snapAxis)
+        let currentSnap = untrack(() => snapAxis)
         const dx = Math.abs(freeTarget.re - d.data.startValue.re)
         const dy = Math.abs(freeTarget.im - d.data.startValue.im)
 
-        if (oldSnap === 'x' && dx > 0.3) oldSnap = undefined
-        if (oldSnap === 'y' && dy > 0.3) oldSnap = undefined
-        if (!oldSnap) snapAxis = dx > dy ? 'x' : 'y'
+        if (currentSnap === 'x' && dy > 0.3) currentSnap = undefined
+        if (currentSnap === 'y' && dx > 0.3) currentSnap = undefined
+        if (!currentSnap) snapAxis = dx > dy ? 'x' : 'y'
       } else {
         snapAxis = undefined
       }
