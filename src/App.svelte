@@ -13,16 +13,18 @@
   $effect(() => setThemeByName(themeInput))
 
   let depthElt: StepperInput
-  let matElts: MatrixInput[] = $state(Array(2))
-  let planeElt: PlaneInput
 
-  let matrices: (CMat | undefined)[] = $state(Array(2))
+  function identity(): CMat {
+    return [complex(1), complex(0), complex(0), complex(1)]
+  }
+
+  let matrices: [CMat, CMat] = $state([identity(), identity()])
   let showIso = $state([false, false])
   let rawColors = $derived([getTheme().canvas.isometryColors[0], getTheme().canvas.isometryColors[1]])
   let isoData = $derived(
     [0, 1].flatMap((i) => {
       const m = matrices[i]
-      if (!m || mIsSingular(m) || !showIso[i]) return []
+      if (mIsSingular(m) || !showIso[i]) return []
       return [{ m, c: rawColors[i] }]
     })
   )
@@ -31,6 +33,16 @@
 
   let depth: number = $state(5)
   let isoFocus: { id: number; elt: number } | undefined = $state()
+
+  let focusedComplex = $derived.by(() => {
+    if (!isoFocus) return undefined
+    return matrices[isoFocus.id][isoFocus.elt]
+  })
+
+  function setFocusedComplex(c: Complex) {
+    if (!isoFocus) return
+    matrices[isoFocus.id][isoFocus.elt] = c
+  }
 
   let urlReferenceCopied = $state(false)
   watch(() => $state.snapshot([depth, matrices, showIso]), () => {
@@ -41,7 +53,7 @@
     const raw = params.get(key)
     if (!raw) return undefined
     const list = raw.split(' ').map(Number)
-    if (!list.every(Number.isFinite)) return undefined
+    if (list.length !== 8 || !list.every(Number.isFinite)) return undefined
     return Array.from({length: 4}, (_, i) => ({re: list[2*i], im: list[2*i+1]})) as CMat
   }
 
@@ -51,28 +63,29 @@
     depth = depth && Number.isInteger(depth) && depth >= 1 ? depth : undefined
 
     const matrix1 = parseMatrixParam(params, 'a')
-    if (matrix1 && params.get('showa') === '1') showIso[0] = true
-
     const matrix2 = parseMatrixParam(params, 'b')
-    if (matrix2 && params.get('showb') === '1') showIso[1] = true
 
-    return { depth, matrix1, matrix2 }
+    return {
+      depth,
+      matrix1,
+      matrix2,
+      showa: params.get('showa') === '1',
+      showb: params.get('showb') === '1',
+    }
   }
 
   function copyUrlReference() {
     let params = new URLSearchParams()
     params.append('d', depth.toString())
 
-    let [mat1, mat2] = matrices
-
-    const a = mat1?.flatMap(z => [z.re, z.im])?.join(' ')
-    if (a) params.append('a', a)
-
-    const b = mat2?.flatMap(z => [z.re, z.im])?.join(' ')
-    if (b) params.append('b', b)
-
-    if (a) params.append('showa', showIso[0] ? '1' : '0')
-    if (b) params.append('showb', showIso[1] ? '1' : '0')
+    if (showIso[0]) {
+      params.append('a', matrices[0].flatMap(z => [z.re, z.im]).join(' '))
+      params.append('showa', '1')
+    }
+    if (showIso[1]) {
+      params.append('b', matrices[1].flatMap(z => [z.re, z.im]).join(' '))
+      params.append('showb', '1')
+    }
 
     const url = new URL(window.location.href);
     navigator.clipboard.writeText(`${url.origin}${url.pathname}?${params}`)
@@ -82,86 +95,22 @@
   onMount(() => {
     const urlParams = parseUrlParams(new URLSearchParams(window.location.search))
     depthElt.set(urlParams.depth ?? 10)
-    if (urlParams.matrix1) setMatrixFromGlobal(0, urlParams.matrix1)
-    if (urlParams.matrix2) setMatrixFromGlobal(1, urlParams.matrix2)
+    if (urlParams.matrix1) {
+      matrices[0] = urlParams.matrix1
+      showIso[0] = urlParams.showa
+    }
+    if (urlParams.matrix2) {
+      matrices[1] = urlParams.matrix2
+      showIso[1] = urlParams.showb
+    }
   })
 
   let animate: 0 | 1 | 2 = $state(0)
   let animateIso = $derived([undefined, ...matrices][animate])
 
-  function setMatrixInput(id: number, mat: CMat) {
-    matElts![id].set(mat)
-  }
-
-  function setMatrixInputElt(id: number, index: number, z: Complex) {
-    matElts![id].setEntry(index, z)
-  }
-
-  function setPlaneInput(c: Complex) {
-    planeElt.setValue(c)
-  }
-
-  // Set entire matrix from global change (e.g. not from an input element)
-  function setMatrixFromGlobal(id: number, mat: CMat) {
-    matrices[id] = mat
-    setMatrixInput(id, mat)
-    if (isoFocus?.id === id) {
-      const z = mat[isoFocus.elt]
-      setPlaneInput(z)
-    }
-  }
-
-  // Set matrix element from global change (e.g. not from an input element)
-  function setMatrixEltFromGlobal(id: number, index: number, z: Complex) {
-    if (matrices[id] === undefined) {
-      matrices[id] = [complex(0), complex(0), complex(0), complex(0)]
-    }
-    matrices[id][index] = z
-    setMatrixInputElt(id, index, z)
-    if (id === isoFocus?.id && index === isoFocus.elt) {
-      setPlaneInput(z)
-    }
-  }
-
-  // Set matrix element from matrix input change
-  function setMatrixEltFromMatrixInput(id: number, elt: number, value: Complex = complex(0)) {
-    if (matrices[id] === undefined) {
-      matrices[id] = [complex(0), complex(0), complex(0), complex(0)]
-    }
-    matrices[id][elt] = value
-    if (id === isoFocus?.id && elt === isoFocus.elt) {
-      setPlaneInput(value)
-    }
-  }
-
-  // Set matrix element from plane input change
-  function setMatrixEltFromPlaneInput(e: Complex) {
-    if (isoFocus === undefined) return
-    const { id, elt } = isoFocus
-    if (!matrices[id]) {
-      matrices[id] = [complex(0), complex(0), complex(0), complex(0)]
-    }
-    let mat = matrices[id]
-    
-    mat[elt] = e
-    setMatrixInputElt(id, elt, e)
-  }
-
-  // Set focus for isometry from matrix input focus
-  function setIsoFocus(id: number, elt?: number) {
-    isoFocus = (elt === undefined) ? undefined : { id, elt }
-    if (isoFocus) {
-      const z = matrices[isoFocus.id]?.[isoFocus.elt] || complex(0)
-      setPlaneInput(z)
-    }
-  }
-
-  // Adjust matrix to make determinant one
   function matrixMakeDeterminantOne(id: number, elt: number) {
-    if (!matrices[id]) return
-    let mat = matrices[id] as CMat
-    const result = makedet1(mat, elt)
-    if (result) setMatrixEltFromGlobal(id, elt, result)
+    const result = makedet1(matrices[id], elt)
+    if (result) matrices[id][elt] = result
   }
 </script>
 
@@ -178,9 +127,8 @@
       <input type="checkbox" name="isometry{i+1}" bind:checked={showIso[i]} />Isometry {i + 1}
       <div class="combined-elements">
         <MatrixInput
-        bind:this={matElts[i]}
-        onfocus={index => setIsoFocus(i, index)}
-        oneltchange={e => setMatrixEltFromMatrixInput(i, e.index, e.value)}
+        bind:value={matrices[i]}
+        onfocus={index => isoFocus = index === undefined ? undefined : { id: i, elt: index }}
         onkeydown={e => {
           if (e.key === 'd') {
             matrixMakeDeterminantOne(i, e.index)
@@ -192,7 +140,7 @@
     {/each}
     <div class="sidebar-row">
       <div class="row-center">
-        <PlaneInput bind:this={planeElt} onchange={e => setMatrixEltFromPlaneInput(e)}/>
+        <PlaneInput value={focusedComplex} onchange={setFocusedComplex} />
       </div>
     </div>
     <div class="sidebar-row">

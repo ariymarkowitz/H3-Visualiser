@@ -1,22 +1,24 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte'
   import { getTheme, type Theme } from '../../style/themes/themes.svelte'
-  import { cadd, cequal, cnormsq, complex, crmul, csub, type Complex } from '../math/math'
+  import { cadd, cEqualOpt, cequal, cnormsq, complex, crmul, csub, type Complex } from '../math/math'
   import { useAnimationTimer } from '../utils/useAnimationTimer.svelte'
   import { useDrag } from '../utils/useDrag.svelte'
   import { useShiftKey } from '../utils/useShiftKey.svelte'
+  import { echoGuard } from '../utils/echoGuard.svelte'
 
   type Props = {
+    value?: Complex
     onchange?: (c: Complex) => void
   }
 
-  let { onchange = () => {} }: Props = $props()
+  let { value, onchange }: Props = $props()
 
   let width: number = $state(0)
   let height: number = $state(0)
 
-  let value: Complex = $state(complex(0))
-  let targetValue: Complex = $state(complex(0))
+  let pos: Complex = $state(complex(0))
+  let target: Complex = $state(complex(0))
 
   let canvas: HTMLCanvasElement
   $effect(() => {
@@ -29,10 +31,15 @@
     canvas.height = height
   })
 
-  export function setValue(c: Complex) {
-    value = c
-    targetValue = c
-  }
+  const ctrl = echoGuard({
+    read: () => value,
+    write: v => { if (v !== undefined) onchange?.(v) },
+    equal: cEqualOpt,
+    sync: v => {
+      pos = v ?? complex(0)
+      target = v ?? complex(0)
+    },
+  })
 
   const MIN_X = -3
   const MAX_X = 3
@@ -51,32 +58,32 @@
     return complex(re, im)
   }
 
-  // Animation loop to smoothly interpolate value towards targetValue
+  // Animation loop to smoothly interpolate pos towards target
   let params: [HTMLCanvasElement, number, number, Theme, Complex, Complex]
-  let dz: Complex = $derived(csub(targetValue, value))
+  let dz: Complex = $derived(csub(target, pos))
 
   const anim = useAnimationTimer(dt => update(dt, params))
   $effect(() => {
-    params = [canvas, width, height, getTheme(), targetValue, dz]
+    params = [canvas, width, height, getTheme(), target, dz]
     anim.start()
   })
 
   function update(
     dt: number,
-    [canvas, width, height, theme, targetValue, dz]: typeof params
+    [canvas, width, height, theme, target, dz]: typeof params
   ) {
     const decay = 90 // milliseconds
     const factor = 1 - Math.exp(-dt / decay)
 
-    if (!cequal(value, targetValue)) {
-      onchange(value)
+    if (!cequal(pos, target)) {
+      ctrl.emit(pos)
     }
 
     if (cnormsq(dz) < 1e-4) {
-      value = targetValue
+      pos = target
       anim.stop()
     } else {
-      value = cadd(value, crmul(dz, factor))
+      pos = cadd(pos, crmul(dz, factor))
     }
 
     draw(canvas, width, height, theme)
@@ -105,16 +112,16 @@
     ctx.stroke()
 
     // Draw dot
-    const pos = worldToScreen(value, width, height)
+    const screen = worldToScreen(pos, width, height)
     ctx.beginPath()
     ctx.fillStyle = theme.ui.textColor
-    ctx.arc(pos.x, pos.y, 3 * window.devicePixelRatio, 0, 2 * Math.PI)
+    ctx.arc(screen.x, screen.y, 3 * window.devicePixelRatio, 0, 2 * Math.PI)
     ctx.fill()
   }
 
   const shift = useShiftKey()
   const drag = useDrag<{ startValue: Complex }>({
-    onStart: () => ({ startValue: value }),
+    onStart: () => ({ startValue: pos }),
   })
 
   $effect(() => {
@@ -160,7 +167,7 @@
     })
 
     $effect(() => {
-      targetValue = newTarget
+      target = newTarget
     })
   })
 

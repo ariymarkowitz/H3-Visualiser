@@ -1,27 +1,16 @@
 <script lang="ts" module>
-  import { type CMat, type Complex } from '../math/math'
+  import { type CMat } from '../math/math'
   import ComplexInput from './ComplexInput.svelte'
 </script>
 
 <script lang="ts">
   type MatrixInputProps = {
-    oneltchange?: (e: { index: number, value: Complex | undefined }) => void
+    value: CMat
     onfocus?: (index: number | undefined) => void
     onkeydown?: (e: { index: number, key: string }) => void
   }
-  let { oneltchange = _ => {}, onfocus = _ => {}, onkeydown = _ => {} }: MatrixInputProps = $props()
-  let entryElts: ComplexInput[] = $state(new Array(4))
+  let { value = $bindable(), onfocus = _ => {}, onkeydown = _ => {} }: MatrixInputProps = $props()
   let focus: number | undefined = $state()
-
-  export const set = (mat: CMat) => {
-    mat.forEach((z, i) => {
-      entryElts[i].set(z)
-    })
-  }
-
-  export const setEntry = (index: number, z: Complex) => {
-    entryElts[index].set(z)
-  }
 
   function keydown(i: number, e: KeyboardEvent) {
     onkeydown({ index: i, key: e.key })
@@ -33,7 +22,7 @@
   <div class="matrix-input">
     {#each [0, 1, 2, 3] as _, i}
       <ComplexInput
-      bind:this={entryElts[i]}
+      bind:value={value[i]}
       onfocus={() => {
         focus = i
         onfocus(i)
@@ -41,7 +30,6 @@
       onblur={() => {
         if (focus === i) focus = undefined
       }}
-      onchange={v => oneltchange({ index: i, value: v })}
       onkeydown={e => keydown(i, e)}
       />
     {/each}
@@ -65,7 +53,7 @@
       }
     } */
   }
-  
+
   .matrix-input :global {
     display: inline-grid;
     grid-template-columns: repeat(2, 1fr);

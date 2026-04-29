@@ -5,15 +5,15 @@
 
 <script lang="ts">
   import type { HTMLInputAttributes } from 'svelte/elements'
-  import { cIsZero, complex, type Complex } from '../math/math'
+  import { cIsZero, cEqualOpt, complex, type Complex } from '../math/math'
+  import { echoGuard } from '../utils/echoGuard.svelte'
 
-  type ComplexInputProps = Omit<HTMLInputAttributes, 'onchange' | 'onfocus' | 'type'>& Partial<{
-    onchange: (value: Complex | undefined) => void
-    onfocus: (event: FocusEvent) => void
-  }>
+  type ComplexInputProps = Omit<HTMLInputAttributes, 'value' | 'type'> & {
+    value?: Complex
+  }
 
-  let { onchange = _ => {}, onfocus = _ => {}, ...rest }: ComplexInputProps = $props()
-  let value: string = $state('')
+  let { value = $bindable(complex(0)), ...rest }: ComplexInputProps = $props()
+  let text: string = $state('')
   let prevInput: string = $state('')
 
   function isValidInput(input: string) {
@@ -44,34 +44,36 @@
     return complex(0)
   }
 
-  function onInput() {
-    if (!isValidInput(value)) {
-      value = prevInput
-      return
-    }
-    prevInput = value
-    const parsed = parse(value)
-    onchange(parsed || undefined)
-  }
-
   function parseFloatShort(n: number) {
     const precision = Math.min(2, n.toString().split(".")[1]?.length || 0)
     return n.toFixed(precision);
   }
 
-  function toString(z: Complex, precise = false) {
-    const parseNumber: (n: number) => string =
-      precise ? n => n.toString() : parseFloatShort
+  function toString(z: Complex) {
     if (cIsZero(z)) return `0`
-    if (z.re === 0) return `${parseNumber(z.im)}i`
-    if (z.im === 0) return parseNumber(z.re)
-    return `${parseNumber(z.re)}${z.im >= 0 ? '+' : '-'}${parseNumber(Math.abs(z.im))}i`
+    if (z.re === 0) return `${parseFloatShort(z.im)}i`
+    if (z.im === 0) return parseFloatShort(z.re)
+    return `${parseFloatShort(z.re)}${z.im >= 0 ? '+' : '-'}${parseFloatShort(Math.abs(z.im))}i`
   }
 
-  export function set(c: Complex) {
-    value = toString(c)
-    prevInput = value
+  const ctrl = echoGuard({
+    read: () => value,
+    write: v => { value = v },
+    equal: cEqualOpt,
+    sync: v => {
+      text = v === undefined ? '' : toString(v)
+      prevInput = text
+    },
+  })
+
+  function onInput() {
+    if (!isValidInput(text)) {
+      text = prevInput
+      return
+    }
+    prevInput = text
+    ctrl.emit(parse(text))
   }
 </script>
 
-<input type='text' bind:value oninput={onInput} onfocus={onfocus} {...rest} />
+<input type='text' bind:value={text} oninput={onInput} {...rest} />

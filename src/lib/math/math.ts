@@ -100,6 +100,11 @@ export function cequal(a: Complex, b: Complex) {
   return a.re === b.re && a.im === b.im
 }
 
+export function cEqualOpt(a: Complex | undefined, b: Complex | undefined) {
+  if (a === undefined || b === undefined) return a === b
+  return cequal(a, b)
+}
+
 export function cpow(z: Complex, exp: number) {
   const r = cnorm(z)
   const newtheta = Math.atan2(z.im, z.re)*exp
