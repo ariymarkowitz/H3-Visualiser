@@ -42,16 +42,6 @@
     display: flex;
     gap: 0.5em;
     align-items: center;
-
-    /* math {
-      font-size: 1.3em;
-      mo[form="prefix"] {
-        margin-right: -0.2em;
-      }
-      mo[form="postfix"] {
-        margin-left: -0.2em;
-      }
-    } */
   }
 
   .matrix-input :global {
