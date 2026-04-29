@@ -19,9 +19,12 @@
   let matrices: (CMat | undefined)[] = $state(Array(2))
   let showIso = $state([false, false])
   let rawColors = $derived([getTheme().canvas.isometryColors[0], getTheme().canvas.isometryColors[1]])
-  let isoData = $derived([0, 1]
-    .map((i) => ({ m: matrices[i], c: rawColors[i] }))
-    .filter((x, i) => x.m !== undefined && !mIsSingular(x.m) && showIso[i])
+  let isoData = $derived(
+    [0, 1].flatMap((i) => {
+      const m = matrices[i]
+      if (!m || mIsSingular(m) || !showIso[i]) return []
+      return [{ m, c: rawColors[i] }]
+    })
   )
   let gens = $derived(isoData.map((x) => x.m as CMat))
   let colors = $derived(isoData.map((x) => x.c.map((c) => new Color(c))).flat())
@@ -34,38 +37,24 @@
     urlReferenceCopied = false
   })
 
+  function parseMatrixParam(params: URLSearchParams, key: string): CMat | undefined {
+    const raw = params.get(key)
+    if (!raw) return undefined
+    const list = raw.split(' ').map(Number)
+    if (!list.every(Number.isFinite)) return undefined
+    return Array.from({length: 4}, (_, i) => ({re: list[2*i], im: list[2*i+1]})) as CMat
+  }
+
   function parseUrlParams(params: URLSearchParams) {
     const depthParam = params.get('d')
     let depth = depthParam ? parseInt(depthParam) : undefined
     depth = depth && Number.isInteger(depth) && depth >= 1 ? depth : undefined
 
-    const aParam = params.get('a')
-    const mat1List = aParam ? aParam.split(' ').map(Number) : undefined
-    let matrix1: CMat | undefined
-    if (mat1List?.every(Number.isFinite)) {
-      matrix1 = Array.from(
-        {length: 4},
-        (_, i) => ({re: mat1List[2*i], im: mat1List[2*i+1]})
-      ) as CMat
-    }
-    const showIso1Param = params.get('showa')
-    if (matrix1 && showIso1Param === '1') {
-      showIso[0] = true
-    }
+    const matrix1 = parseMatrixParam(params, 'a')
+    if (matrix1 && params.get('showa') === '1') showIso[0] = true
 
-    const bParam = params.get('b')
-    const mat2List = bParam ? bParam.split(' ').map(Number) : undefined
-    let matrix2: CMat | undefined
-    if (mat2List?.every(Number.isFinite)) {
-      matrix2 = Array.from(
-        {length: 4},
-        (_, i) => ({re: mat2List[2*i], im: mat2List[2*i+1]})
-      ) as CMat
-    }
-    const showIso2Param = params.get('showb')
-    if (matrix2 && showIso2Param === '1') {
-      showIso[1] = true
-    }
+    const matrix2 = parseMatrixParam(params, 'b')
+    if (matrix2 && params.get('showb') === '1') showIso[1] = true
 
     return { depth, matrix1, matrix2 }
   }
@@ -92,7 +81,7 @@
 
   onMount(() => {
     const urlParams = parseUrlParams(new URLSearchParams(window.location.search))
-    depthElt.set(urlParams.depth ? urlParams.depth : 10)
+    depthElt.set(urlParams.depth ?? 10)
     if (urlParams.matrix1) setMatrixFromGlobal(0, urlParams.matrix1)
     if (urlParams.matrix2) setMatrixFromGlobal(1, urlParams.matrix2)
   })
@@ -182,7 +171,7 @@
   </div>
   <div class="sidebar">
     <div class="sidebar-row">
-      Depth<StepperInput bind:this={depthElt} onchange={e => depth = e.detail} init={depth} min={1} max={20} />
+      Depth<StepperInput bind:this={depthElt} onchange={v => depth = v} init={depth} min={1} max={20} />
     </div>
     {#each [0, 1] as _, i}
       <div class="sidebar-row">
@@ -190,11 +179,11 @@
       <div class="combined-elements">
         <MatrixInput
         bind:this={matElts[i]}
-        onfocus={e => setIsoFocus(i, e.detail)}
-        oneltchange={e => setMatrixEltFromMatrixInput(i, e.detail.index, e.detail.value)}
+        onfocus={index => setIsoFocus(i, index)}
+        oneltchange={e => setMatrixEltFromMatrixInput(i, e.index, e.value)}
         onkeydown={e => {
-          if (e.detail.key === 'd') {
-            matrixMakeDeterminantOne(i, e.detail.index)
+          if (e.key === 'd') {
+            matrixMakeDeterminantOne(i, e.index)
           }
         }}
         />
@@ -213,7 +202,7 @@
     </div>
     <div class="sidebar-row">
       Theme <select bind:value={themeInput}>
-        {#each Object.values(themes) as theme, _}
+        {#each Object.values(themes) as theme}
           <option>{theme.name}</option>
         {/each}
       </select>

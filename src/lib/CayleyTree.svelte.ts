@@ -34,23 +34,27 @@ export class CayleyTree {
 
   mesh: LineSegments2 | undefined
   geometry?: LineSegmentsGeometry
+  material: LineMaterial
   generators: CMat[] = []
   depth = 0
 
+  // Pre-extracted [r,g,b] triples per entry in `colors`, rebuilt in setGeometry
+  // so _tree never allocates a THREE.Color per recursion step.
+  colorArrays: [number, number, number][] = []
   colors: THREE.Color[] = []
   minSize = 0.015
-  
+
   uniforms: TreeUniforms | undefined = $state()
   ready: boolean = $state(false)
 
   constructor(width: number, height: number) {
-    const material = new LineMaterial({
+    this.material = new LineMaterial({
       vertexColors: true,
       linewidth: 2, // px
       resolution: new THREE.Vector2(width, height),
       worldUnits: false
     })
-    material.onBeforeCompile = (shader) => {
+    this.material.onBeforeCompile = (shader) => {
       const i = shader.fragmentShader.indexOf('#include <premultiplied_alpha_fragment>')
       const first = shader.fragmentShader.slice(0, i)
       const last = shader.fragmentShader.slice(i)
@@ -68,32 +72,34 @@ export class CayleyTree {
       ` +
         last
     }
-    material.uniforms.fadeColor = { value: undefined }
-    material.uniforms.fadeNear = { type: 'f', value: undefined } as any
-    material.uniforms.fadeFar = { type: 'f', value: undefined } as any
-    material.uniforms.fadeStrength = { type: 'f', value: undefined } as any
+    this.material.uniforms.fadeColor = { value: undefined }
+    this.material.uniforms.fadeNear = { type: 'f', value: undefined } as any
+    this.material.uniforms.fadeFar = { type: 'f', value: undefined } as any
+    this.material.uniforms.fadeStrength = { type: 'f', value: undefined } as any
     $effect(() => {
       if (!this.uniforms) {
         this.ready = false
         return
       }
-      material.uniforms.fadeColor.value = this.uniforms.fadeColor
-      material.uniforms.fadeNear.value = this.uniforms.fadeNear
-      material.uniforms.fadeFar.value = this.uniforms.fadeFar
-      material.uniforms.fadeStrength.value = this.uniforms.fadeStrength
+      this.material.uniforms.fadeColor.value = this.uniforms.fadeColor
+      this.material.uniforms.fadeNear.value = this.uniforms.fadeNear
+      this.material.uniforms.fadeFar.value = this.uniforms.fadeFar
+      this.material.uniforms.fadeStrength.value = this.uniforms.fadeStrength
     })
     this.geometry = new LineSegmentsGeometry()
     $effect(() => {
       if (!this.uniforms || this.ready) return
-      this.mesh = new LineSegments2(this.geometry, material)
+      this.mesh = new LineSegments2(this.geometry, this.material)
       this.ready = true
     })
   }
 
   setGeometry(gens: CMat[], colors: THREE.Color[], depth: number, start: CMat = mId()) {
-    this.generators = gens.map((g) => [g, minv(g)]).flat()
+    this.generators = gens.flatMap((g) => [g, minv(g)])
     this.depth = depth
     this.colors = colors
+    // Pre-extract RGB arrays once per generator so _tree doesn't allocate per step.
+    this.colorArrays = colors.map((c) => [c.r, c.g, c.b])
 
     const data: TreeData = {
       vertexColors: [],
@@ -114,39 +120,40 @@ export class CayleyTree {
 
   _tree(
     depth: number,
-    size: number,
+    edgeSize: number,
     genN: number | undefined,
     q: Quaternion,
     mat: CMat,
     p: Vec3,
     state: TreeData
   ) {
-    if (depth >= this.depth || size < this.minSize) return
+    if (depth >= this.depth || edgeSize < this.minSize) return
     if (depth > 0 && mIsId(mat, 1e-4)) return
 
-    for (let i = 0; i < this.generators.length; i++) {
-      if (this.inverse(i) === genN) continue
+    for (let gi = 0; gi < this.generators.length; gi++) {
+      if ((gi ^ 1) === genN) continue
 
-      const newMat = mmul(mat, this.generators[i])
+      const newMat = mmul(mat, this.generators[gi])
       const newQuat = mobius(newMat)
-      const newVertex = toBall(mobius(newMat))
+      const newVertex = toBall(newQuat)
 
-      const size = vdist(p, newVertex)
-      const subdivisions = Math.floor(Math.min(Math.max(size * 100, 2), 10))
+      const childSize = vdist(p, newVertex)
+      const subdivisions = Math.floor(Math.min(Math.max(childSize * 100, 2), 10))
 
-      const c = new THREE.Color(this.colors[i]).toArray()
-      state.vertexColors.push(c[0], c[1], c[2])
+      const [r, g, b] = this.colorArrays[gi]
+      state.vertexColors.push(r, g, b)
       state.vertices.push(newVertex.x, newVertex.y, newVertex.z)
-      for (let i = 0; i < subdivisions * 2 - 2; i++) {
-        state.lineColors.push(c[0], c[1], c[2])
+      for (let li = 0; li < subdivisions * 2 - 2; li++) {
+        state.lineColors.push(r, g, b)
       }
       geodesic(q, newQuat, subdivisions, state.lines)
 
-      this._tree(depth + 1, size, i, newQuat, newMat, newVertex, state)
+      this._tree(depth + 1, childSize, gi, newQuat, newMat, newVertex, state)
     }
   }
 
-  inverse(n: number) {
-    return n % 2 ? n - 1 : n + 1
+  dispose() {
+    this.geometry?.dispose()
+    this.material.dispose()
   }
 }

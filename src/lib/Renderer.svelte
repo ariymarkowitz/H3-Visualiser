@@ -33,13 +33,21 @@
   let dpr = window.devicePixelRatio
 
   let canvas: HTMLCanvasElement
-  let renderer: THREE.WebGLRenderer
   let id: number
 
   let cameraPos = createMemo<THREE.Vector3 | undefined>(undefined, (a, b) => a === b || (a !== undefined && b !== undefined && a.equals(b)))
   let updateTree: (gens: CMat[], colors: THREE.Color[], depth: number, iso?: CMat) => void = $state(() => {})
- 
+
   let tree: CayleyTree | undefined = $state()
+
+  // Lifted from onMount — these read reactive state (getTheme, cameraPos, tree)
+  // that changes after mount. The Three.js objects they reference are stored in
+  // $state variables below so these effects can observe them.
+  let renderer: THREE.WebGLRenderer | undefined = $state()
+  let axis: THREE.AxesHelper | undefined = $state()
+  let matShader: THREE.ShaderMaterial | undefined = $state()
+  let scene: THREE.Scene | undefined = $state()
+  let setDirty: (() => void) | undefined = $state()
 
   $effect(() => {
     const camPos = cameraPos.get()
@@ -52,9 +60,42 @@
     }
   })
 
+  $effect(() => {
+    if (!renderer || !setDirty) return
+    renderer.setClearColor(getTheme().ui.background)
+    setDirty()
+  })
+
+  $effect(() => {
+    if (!axis || !setDirty) return
+    const axisColors = getTheme().canvas.axisColors.map((c) => new THREE.Color(c))
+    axis.setColors(axisColors[0], axisColors[1], axisColors[2])
+    setDirty()
+  })
+
+  $effect(() => {
+    if (!matShader || !setDirty) return
+    const c = new THREE.Color(getTheme().canvas.foreground)
+    matShader.uniforms.color.value = [c.r, c.g, c.b, 1]
+    setDirty()
+  })
+
+  $effect(() => {
+    if (!tree || !scene) return
+    if (!tree.ready) return
+    if (!tree.mesh) throw new Error("Mesh is undefined")
+    scene.add(tree.mesh)
+  })
+
+  $effect(() => {
+    if (!tree || !setDirty) return
+    if (tree.uniforms) setDirty()
+  })
+
   onMount(() => {
     let dirty = true
-    const setDirty = () => (dirty = true)
+    const _setDirty = () => (dirty = true)
+    setDirty = _setDirty
 
     const shader = {
       outline: {
@@ -79,13 +120,10 @@
     renderer.setSize(width, height, false)
     renderer.setPixelRatio(dpr)
     renderer.setClearColor(0xffffff)
-    $effect(() => {
-      renderer.setClearColor(getTheme().ui.background)
-      setDirty()
-    })
     renderer.autoClear = false
 
-    const scene = new THREE.Scene()
+    const _scene = new THREE.Scene()
+    scene = _scene
     const maskScene = new THREE.Scene()
     const maskScene2 = new THREE.Scene()
     const outScene = new THREE.Scene()
@@ -98,15 +136,9 @@
     controls.noPan = true
     controls.rotateSpeed = 2
 
-    const axis = new THREE.AxesHelper(1)
+    axis = new THREE.AxesHelper(1)
     axis.setColors(new THREE.Color(0xff9999), new THREE.Color(0x66ff66), new THREE.Color(0x9999ff))
-    scene.add(axis)
-    
-    $effect(() => {
-      const colors = getTheme().canvas.axisColors.map((c) => new THREE.Color(c))
-      axis.setColors(colors[0], colors[1], colors[2])
-      setDirty()
-    })
+    _scene.add(axis)
 
     // # shaded model
     const sphereGeo = new THREE.SphereGeometry(1, 128, 64)
@@ -127,22 +159,17 @@
 
     const outShader = shader.outline
 
-    const matShader = new THREE.ShaderMaterial({
+    matShader = new THREE.ShaderMaterial({
       uniforms: outlineUniforms,
       vertexShader: outShader.vertex_shader,
       fragmentShader: outShader.fragment_shader
-    })
-    $effect(() => {
-      const c = new THREE.Color(getTheme().canvas.foreground)
-      matShader.uniforms.color.value = [c.r, c.g, c.b, 1]
-      setDirty()
     })
 
     const outlineMesh = new THREE.Mesh(sphereGeo, matShader)
     outScene.add(outlineMesh)
 
     // postprocessing
-    const renderPass = new RenderPass(scene, camera)
+    const renderPass = new RenderPass(_scene, camera)
     const outline = new RenderPass(outScene, camera)
     outline.clear = false
 
@@ -169,24 +196,14 @@
     composer.addPass(fxaaPass)
 
     id = requestAnimationFrame(animate)
-    controls.addEventListener('change', setDirty)
+    controls.addEventListener('change', _setDirty)
 
     tree = new CayleyTree(width, height)
     updateTree = (gens, colors, depth, iso) => {
       if (!tree) return
       tree.setGeometry(gens, colors, depth, iso)
-      setDirty()
+      _setDirty()
     }
-    $effect(() => {
-      if (!tree) return
-      if (!tree.ready) return
-      if (!tree.mesh) throw new Error("Mesh is undefined")
-      scene.add(tree.mesh)
-    })
-    $effect(() => {
-      if (!tree) return
-      if (tree.uniforms) setDirty()
-    })
 
     let _time: number | undefined
     function animate(time: number) {
@@ -211,14 +228,20 @@
           _time = undefined
         }
 
-        matShader.uniforms.offset.value = 0.003 * camPos.length()
+        matShader!.uniforms.offset.value = 0.003 * camPos.length()
         composer.render()
       }
     }
 
     return () => {
       if (id) cancelAnimationFrame(id)
-      controls.removeEventListener('change', setDirty)
+      controls.removeEventListener('change', _setDirty)
+      tree?.dispose()
+      sphereGeo.dispose()
+      sphereMat.dispose()
+      matShader?.dispose()
+      composer.passes.forEach(p => { if ('dispose' in p && typeof p.dispose === 'function') p.dispose() })
+      renderer?.dispose()
     }
   })
 </script>

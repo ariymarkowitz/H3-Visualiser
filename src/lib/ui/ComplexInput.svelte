@@ -1,5 +1,4 @@
 <script lang="ts" module>
-  export type ComplexInputEvent = CustomEvent<Complex | undefined>
   const partialMatch = /^\s*([+-]?\s*(\d+(\.\d*)?|\.\d+)?)?\s*([+-]?\s*(\d+(\.\d*)?|\.\d+)?i?)?\s*$/
   const fullMatch = /^\s*(((?<re_sign>[+-])?\s*(?<re>\d+(\.\d*)?|\.\d+))\s*((?<im_sign>[+-])\s*(?<im>\d+(\.\d*)?|\.\d+)?\s*(?<has_imag>i))?|(?<im_sign2>[+-]?)?\s*(?<im2>\d+(\.\d*)?|\.\d+)?\s*(?<has_imag2>i))\s*$/
 </script>
@@ -9,7 +8,7 @@
   import { cIsZero, complex, type Complex } from '../math/math'
 
   type ComplexInputProps = Omit<HTMLInputAttributes, 'onchange' | 'onfocus' | 'type'>& Partial<{
-    onchange: (event: ComplexInputEvent) => void
+    onchange: (value: Complex | undefined) => void
     onfocus: (event: FocusEvent) => void
   }>
 
@@ -52,11 +51,7 @@
     }
     prevInput = value
     const parsed = parse(value)
-    if (parsed) {
-      onchange(new CustomEvent('change', { detail: parsed }))
-    } else {
-      onchange(new CustomEvent('change', { detail: undefined }))
-    }
+    onchange(parsed || undefined)
   }
 
   function parseFloatShort(n: number) {

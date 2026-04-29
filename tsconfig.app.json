@@ -16,7 +16,9 @@
     "checkJs": true,
     "moduleDetection": "force",
     "emitDeclarationOnly": true,
-    "composite": true
+    "composite": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
   },
   "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte"]
 }

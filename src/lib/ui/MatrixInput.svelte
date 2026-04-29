@@ -1,17 +1,13 @@
 <script lang="ts" module>
   import { type CMat, type Complex } from '../math/math'
   import ComplexInput from './ComplexInput.svelte'
-
-  export type MatrixInputEvent = CustomEvent<{ index: number, value: Complex | undefined }>
-  export type MatrixFocusEvent = CustomEvent<number | undefined>
-  export type MatrixKeyEvent = CustomEvent<{ index: number, key: string }>
 </script>
 
 <script lang="ts">
   type MatrixInputProps = {
-    oneltchange?: (e: MatrixInputEvent) => void
-    onfocus?: (e: MatrixFocusEvent) => void
-    onkeydown?: (e: MatrixKeyEvent) => void
+    oneltchange?: (e: { index: number, value: Complex | undefined }) => void
+    onfocus?: (index: number | undefined) => void
+    onkeydown?: (e: { index: number, key: string }) => void
   }
   let { oneltchange = _ => {}, onfocus = _ => {}, onkeydown = _ => {} }: MatrixInputProps = $props()
   let entryElts: ComplexInput[] = $state(new Array(4))
@@ -28,7 +24,7 @@
   }
 
   function keydown(i: number, e: KeyboardEvent) {
-    onkeydown(new CustomEvent('keydown', { detail: { index: i, key: e.key } }))
+    onkeydown({ index: i, key: e.key })
   }
 </script>
 
@@ -40,14 +36,12 @@
       bind:this={entryElts[i]}
       onfocus={() => {
         focus = i
-        onfocus(new CustomEvent('focus', { detail: i }))
+        onfocus(i)
       }}
       onblur={() => {
         if (focus === i) focus = undefined
       }}
-      onchange= {e => {
-        oneltchange(new CustomEvent('change', { detail: { index: i, value: e.detail } }))
-      }}
+      onchange={v => oneltchange({ index: i, value: v })}
       onkeydown={e => keydown(i, e)}
       />
     {/each}

@@ -16,7 +16,9 @@
     onchange?: (c: Complex) => void
   }
 
-  type DragState = { dragging: false } | { dragging: true; mouse: Point; startValue: Complex }
+  type DragState =
+    | { dragging: false }
+    | { dragging: true; mouse: Point; startValue: Complex }
 
   let { onchange = () => {} }: Props = $props()
 
@@ -133,23 +135,20 @@
     shiftDown = false
   })
 
-  // Mouse event handlers for dragging
-  function mousedown(e: MouseEvent) {
-    dragState = { dragging: true, mouse: {x: e.clientX, y: e.clientY}, startValue: value }
-  }
-
   $effect(() => {
-    if (dragState.dragging === false) return
+    if (!dragState.dragging) return
     let drag = dragState // TypeScript type narrowing
 
-    let freeTarget = $derived.by(() => {
+    const freeTarget = $derived.by(() => {
       const rect = canvas.getBoundingClientRect()
       const x = (drag.mouse.x - rect.left) * window.devicePixelRatio
       const y = (drag.mouse.y - rect.top) * window.devicePixelRatio
       return screenToWorld(x, y, canvas.width, canvas.height)
     })
 
+    // Which axis is locked during a shift-drag: updated by the effect below.
     let snapAxis: 'x' | 'y' | undefined = $state()
+
     $effect(() => {
       if (shiftDown) {
         let oldSnap = untrack(() => snapAxis)
@@ -164,7 +163,7 @@
       }
     })
 
-    let newTarget = $derived.by(() => {
+    const newTarget = $derived.by(() => {
       if (shiftDown) {
         if (snapAxis === 'x') {
           // Horizontal movement dominant -> keep Y same as start
@@ -177,17 +176,24 @@
         return freeTarget
       }
     })
+
     $effect(() => {
       targetValue = newTarget
     })
-    
+
     useEventListener(window, 'mousemove', (e: MouseEvent) => {
       drag.mouse = {x: e.clientX, y: e.clientY}
-    }),
+    })
+    
     useEventListener(window, 'mouseup', () => {
       dragState = { dragging: false }
     })
   })
+
+  // Mouse event handlers for dragging
+  function mousedown(e: MouseEvent) {
+    dragState = { dragging: true, mouse: {x: e.clientX, y: e.clientY}, startValue: value }
+  }
 
   onMount(() => {
     const resizeObserver = new ResizeObserver(() => {

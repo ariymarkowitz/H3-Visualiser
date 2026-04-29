@@ -1,5 +1,3 @@
-import { lightPosition } from 'three/src/nodes/TSL.js';
-
 export default {
   name: 'Light',
   ui: {

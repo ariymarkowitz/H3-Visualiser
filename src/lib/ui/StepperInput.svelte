@@ -1,12 +1,10 @@
 <script lang='ts'>
-  export type StepperInputEvent = CustomEvent<number>
-  
   type StepperInputProps = Partial<{
     min: number
     max: number
     init: number
     valid: (n: number) => boolean
-    onchange: (e: StepperInputEvent) => void
+    onchange: (value: number) => void
   }>
 
   let {
@@ -32,7 +30,7 @@
 
   function setInternal(n: number) {
     if (set(n)) {
-      onchange(new CustomEvent('change', { detail: n }))
+      onchange(n)
     }
   }
   
@@ -62,7 +60,7 @@
     prevInput = value
     if (isValidValue(value)) {
       numericValue = Number(value)
-      onchange(new CustomEvent('change', { detail: numericValue }))
+      onchange(numericValue)
     }
   }
 

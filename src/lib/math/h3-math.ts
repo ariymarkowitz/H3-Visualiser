@@ -27,10 +27,6 @@ import {
   type Vec3
 } from './math'
 
-export function cmplxToQuat(c: Complex): Quaternion {
-  return quat(c.re, c.im, 0, 0)
-}
-
 export function mobius(m: CMat): Quaternion {
   return qdiv(quat(m[1].re, m[1].im, m[0].re, m[0].im), quat(m[3].re, m[3].im, m[2].re, m[2].im))
 }
@@ -67,10 +63,6 @@ export function endsOfGeodesic(a: Quaternion, b: Quaternion): [Complex, Complex]
   return [end1, end2]
 }
 
-export function quatToVec3Norm(z: Quaternion): Vec3 {
-  return vec3(z.r, z.i, Math.sqrt(z.j ** 2 + z.k ** 2))
-}
-
 export function geodesic(a: Quaternion, b: Quaternion, divisions: number, arr: number[]): void {
   const p1 = toBall(a)
   const p2 = toBall(b)
@@ -82,7 +74,10 @@ export function geodesic(a: Quaternion, b: Quaternion, divisions: number, arr: n
 
   const mid = vadd(x, y)
   const midn = vnormsq(mid)
-  if (isNaN(midn) || midn < 1e-10) {
+  // Scale the threshold by the magnitude of x and y so the test is invariant
+  // to the positions of the boundary points.
+  const scale = vnormsq(x) + vnormsq(y)
+  if (isNaN(midn) || midn < 1e-10 * scale) {
     const step = vrdiv_(vsub(p2, p1), divisions - 1)
 
     arr.push(p1.x, p1.y, p1.z)
