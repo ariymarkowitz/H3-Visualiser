@@ -13,12 +13,15 @@ export type UseDragOptions<S> = {
   onStart: (e: MouseEvent) => S
 }
 
+// `data: S` is treated as scoped storage, not a reactive surface: only the
+// `state` reference itself is tracked, so callers may mutate fields inside
+// `data` without forming read-write loops in their own effects.
 export function useDrag<S>(opts: UseDragOptions<S>) {
-  let state: DragState<S> = $state({ dragging: false })
+  let state: DragState<S> = $state.raw({ dragging: false })
 
   useEventListener(window, 'mousemove', (e: MouseEvent) => {
     if (!state.dragging) return
-    state.mouse = { x: e.clientX, y: e.clientY }
+    state = { ...state, mouse: { x: e.clientX, y: e.clientY } }
   })
   useEventListener(window, 'mouseup', () => {
     if (state.dragging) state = { dragging: false }

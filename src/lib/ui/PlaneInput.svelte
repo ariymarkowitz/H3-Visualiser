@@ -111,46 +111,38 @@
   }
 
   const shift = useShiftKey()
-  const drag = useDrag<{ startValue: Complex }>({
-    onStart: () => ({ startValue: pos }),
-  })
-
-  /** With shift held, the larger-magnitude axis is followed and snapAxis stays
-   * locked once chosen; it is reset whenever shift is released or a new drag starts.
-   */
-  type DragSession = {
+  // With shift held, the larger-magnitude axis is followed and snapAxis stays
+  // locked once chosen; it is reset whenever shift is released or a new drag starts.
+  const drag = useDrag<{
     startValue: Complex
     snapAxis: 'x' | 'y' | undefined
-  }
-  let session: DragSession | undefined = $derived(
-    drag.state.dragging
-      ? { startValue: drag.state.data.startValue, snapAxis: undefined }
-      : undefined
-  )
+  }>({
+    onStart: () => ({ startValue: pos, snapAxis: undefined }),
+  })
 
   $effect(() => {
-    if (!session || !drag.state.dragging) return
-    const mouse = drag.state.mouse
+    if (!drag.state.dragging) return
+    const { mouse, data } = drag.state
     const rect = canvas.getBoundingClientRect()
     const x = (mouse.x - rect.left) * window.devicePixelRatio
     const y = (mouse.y - rect.top) * window.devicePixelRatio
     const freeTarget = screenToWorld(x, y, canvas.width, canvas.height)
 
     if (!shift.down) {
-      session.snapAxis = undefined
+      data.snapAxis = undefined
       target = freeTarget
       return
     }
 
-    const dx = Math.abs(freeTarget.re - session.startValue.re)
-    const dy = Math.abs(freeTarget.im - session.startValue.im)
-    if (session.snapAxis === 'x' && dy > 0.3) session.snapAxis = undefined
-    if (session.snapAxis === 'y' && dx > 0.3) session.snapAxis = undefined
-    if (!session.snapAxis) session.snapAxis = dx > dy ? 'x' : 'y'
+    const dx = Math.abs(freeTarget.re - data.startValue.re)
+    const dy = Math.abs(freeTarget.im - data.startValue.im)
+    if (data.snapAxis === 'x' && dy > 0.3) data.snapAxis = undefined
+    if (data.snapAxis === 'y' && dx > 0.3) data.snapAxis = undefined
+    if (!data.snapAxis) data.snapAxis = dx > dy ? 'x' : 'y'
 
-    target = session.snapAxis === 'x'
-      ? complex(freeTarget.re, session.startValue.im)
-      : complex(session.startValue.re, freeTarget.im)
+    target = data.snapAxis === 'x'
+      ? complex(freeTarget.re, data.startValue.im)
+      : complex(data.startValue.re, freeTarget.im)
   })
 
   onMount(() => {
