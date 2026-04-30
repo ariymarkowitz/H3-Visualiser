@@ -6,6 +6,7 @@
   import { useDrag } from '../utils/useDrag.svelte'
   import { useShiftKey } from '../utils/useShiftKey.svelte'
   import { echoGuard } from '../utils/echoGuard.svelte'
+  import { accumulator } from '../utils/accumulator.svelte'
 
   type Props = {
     value?: Complex
@@ -111,38 +112,37 @@
   }
 
   const shift = useShiftKey()
-  // With shift held, the larger-magnitude axis is followed and snapAxis stays
-  // locked once chosen; it is reset whenever shift is released or a new drag starts.
-  const drag = useDrag<{
-    startValue: Complex
-    snapAxis: 'x' | 'y' | undefined
-  }>({
-    onStart: () => ({ startValue: pos, snapAxis: undefined }),
+  const drag = useDrag<{ startValue: Complex }>({
+    onStart: () => ({ startValue: pos }),
   })
 
-  $effect(() => {
-    if (!drag.state.dragging) return
-    const { mouse, data } = drag.state
+  // The mouse-driven world-space target, undefined when no drag is active.
+  const freeTarget: Complex | undefined = $derived.by(() => {
+    if (!drag.state.dragging) return undefined
+    const { mouse } = drag.state
     const rect = canvas.getBoundingClientRect()
     const x = (mouse.x - rect.left) * window.devicePixelRatio
     const y = (mouse.y - rect.top) * window.devicePixelRatio
-    const freeTarget = screenToWorld(x, y, canvas.width, canvas.height)
+    return screenToWorld(x, y, canvas.width, canvas.height)
+  })
 
-    if (!shift.down) {
-      data.snapAxis = undefined
-      target = freeTarget
-      return
-    }
+  // Follow the larger-magnitude axis when shift is held.
+  // Hold the lock as long as the mouse doesn't stray too far from the locked axis.
+  const snapAxis = accumulator<'x' | 'y' | undefined>(undefined, prev => {
+    if (!drag.state.dragging || !shift.down || !freeTarget) return undefined
+    const start = drag.state.data.startValue
+    const dx = Math.abs(freeTarget.re - start.re)
+    const dy = Math.abs(freeTarget.im - start.im)
+    const stillLocked = (prev === 'x' && dy <= 0.3) || (prev === 'y' && dx <= 0.3)
+    return stillLocked ? prev : (dx > dy ? 'x' : 'y')
+  })
 
-    const dx = Math.abs(freeTarget.re - data.startValue.re)
-    const dy = Math.abs(freeTarget.im - data.startValue.im)
-    if (data.snapAxis === 'x' && dy > 0.3) data.snapAxis = undefined
-    if (data.snapAxis === 'y' && dx > 0.3) data.snapAxis = undefined
-    if (!data.snapAxis) data.snapAxis = dx > dy ? 'x' : 'y'
-
-    target = data.snapAxis === 'x'
-      ? complex(freeTarget.re, data.startValue.im)
-      : complex(data.startValue.re, freeTarget.im)
+  $effect(() => {
+    if (!freeTarget) return
+    const start = drag.state.dragging ? drag.state.data.startValue : freeTarget
+    target = snapAxis.value === 'x' ? complex(freeTarget.re, start.im)
+      : snapAxis.value === 'y' ? complex(start.re, freeTarget.im)
+      : freeTarget
   })
 
   onMount(() => {
