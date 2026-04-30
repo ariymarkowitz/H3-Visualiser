@@ -148,44 +148,35 @@ export function mId(): CMat {
   return [cmplx(1, 0), cmplx(0, 0), cmplx(0, 0), cmplx(1, 0)]
 }
 
-/**
- * Finds U, V = diag(eig1, eig2) such that m = U^-1 V U.
- * @param m The matrix to diagonalise
- */
-export function mdecomp(m: CMat): {U: CMat, eig1: Complex, eig2: Complex} {
-  // Dirty hack. Shift the values slightly if it is parabolic.
-  if (cnormsq(tr(m))-4*cnorm(det(m)) < 1e-8) {
-    m = [m[0], m[1], m[2], cmplx(m[3].re + 1e-4, m[3].im)]
-  }
-  const Delta = crdiv(csub(m[0], m[3]), 2)
-  const d = csqrt(cadd(csqr(Delta), cmul(m[1], m[2])))
-  if (cnormsq(cadd(Delta, d)) < cnormsq(csub(Delta, d))) {
-    d.re = -d.re
-    d.im = -d.im
-  }
-  const sum = cadd(Delta, d)
-  const t1 = cdiv(m[1], sum)
-  const t2 = cdiv(m[2], sum)
-
-  const delta = cdiv(cmul(m[1], m[2]), sum)
-  const eig1 = cadd(m[0], delta)
-  const eig2 = csub(m[3], delta)
-
-  const den = csqrt(cradd(cmul(t1, t2), 1))
-
-  const c = cnormalize(den)
-  const U: CMat = [c, cmul(c, t1), cmul(c, cneg(t2)), c]
-
-  return {U, eig1, eig2}
-}
-
+// Raises a 2x2 matrix to a (possibly non-integer) power via Cayley-Hamilton:
+// M^n = α·M + β·I, where with s = tr(M)/2 and μ = √(s² - det(M)) the
+// eigenvalues are λ± = s ± μ and:
+//   α = (λ+^n - λ-^n) / (2μ),   β = λ+^n - α·λ+
+// At the parabolic limit μ → 0 the formula collapses to α = n·s^(n-1),
+// β = (1−n)·s^n, handled directly to avoid 0/0.
 export function mpow(m: CMat, n: number): CMat {
-  const {U, eig1, eig2} = mdecomp(m)
-  return mmul(minv(U), mmul(diag(cpow(eig1, n), cpow(eig2, n)), U))
-}
+  const s = crdiv(tr(m), 2)
+  const muSq = csub(csqr(s), det(m))
+  const mu = csqrt(muSq)
 
-export function diag(a: Complex, b: Complex): CMat {
-  return [a, cmplx(0, 0), cmplx(0, 0), b]
+  let alpha: Complex
+  let beta: Complex
+  if (cnormsq(mu) <= 1e-14 * cnormsq(s)) {
+    alpha = crmul(cpow(s, n - 1), n)
+    beta = crmul(cpow(s, n), 1 - n)
+  } else {
+    const lp = cpow(cadd(s, mu), n)
+    const lm = cpow(csub(s, mu), n)
+    alpha = cdiv(csub(lp, lm), crmul(mu, 2))
+    beta = csub(lp, cmul(alpha, cadd(s, mu)))
+  }
+
+  return [
+    cadd(cmul(alpha, m[0]), beta),
+    cmul(alpha, m[1]),
+    cmul(alpha, m[2]),
+    cadd(cmul(alpha, m[3]), beta),
+  ]
 }
 
 export function complex(re: number, im: number = 0): Complex {
