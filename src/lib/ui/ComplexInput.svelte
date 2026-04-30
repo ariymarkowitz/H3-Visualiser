@@ -41,16 +41,16 @@
     return complex(0)
   }
 
-  function parseFloatShort(n: number) {
+  function formatShort(n: number) {
     const precision = Math.min(2, n.toString().split(".")[1]?.length || 0)
     return n.toFixed(precision);
   }
 
   function toString(z: Complex) {
     if (cIsZero(z)) return `0`
-    if (z.re === 0) return `${parseFloatShort(z.im)}i`
-    if (z.im === 0) return parseFloatShort(z.re)
-    return `${parseFloatShort(z.re)}${z.im >= 0 ? '+' : '-'}${parseFloatShort(Math.abs(z.im))}i`
+    if (z.re === 0) return `${formatShort(z.im)}i`
+    if (z.im === 0) return formatShort(z.re)
+    return `${formatShort(z.re)}${z.im >= 0 ? '+' : '-'}${formatShort(Math.abs(z.im))}i`
   }
 
   const ctrl = echoGuard({

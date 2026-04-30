@@ -6,22 +6,50 @@
   import StepperInput from './lib/ui/StepperInput.svelte'
   import { getTheme, setThemeByName, themes } from './style/themes/themes.svelte'
   import Renderer from './lib/Renderer.svelte'
-  import { onMount } from 'svelte';
   import { watch } from 'runed';
 
   let themeInput: string = $state(themes[0].name)
   $effect(() => setThemeByName(themeInput))
 
-  let depthElt: StepperInput
+  const matrixKey = (i: number) => i === 0 ? 'a' : 'b'
+  const showKey = (i: number) => i === 0 ? 'showa' : 'showb'
 
-  let matrices: [CMat, CMat] = $state([mId(), mId()])
-  let showIso = $state([false, false])
+  function parseMatrixParam(raw: string | null): CMat | undefined {
+    if (!raw) return undefined
+    const list = raw.split(' ').map(Number)
+    if (list.length !== 8 || !list.every(Number.isFinite)) return undefined
+    return Array.from({length: 4}, (_, i) => ({re: list[2*i], im: list[2*i+1]})) as CMat
+  }
+
+  function parseInitialState() {
+    const params = new URLSearchParams(window.location.search)
+    const d = Number(params.get('d'))
+    const matrices: [CMat, CMat] = [mId(), mId()]
+    const showIso = [false, false]
+    for (let i = 0; i < 2; i++) {
+      const m = parseMatrixParam(params.get(matrixKey(i)))
+      if (m) {
+        matrices[i] = m
+        showIso[i] = params.get(showKey(i)) === '1'
+      }
+    }
+    return {
+      depth: Number.isInteger(d) && d >= 1 ? d : 10,
+      matrices,
+      showIso,
+    }
+  }
+
+  const initial = parseInitialState()
+  let depth: number = $state(initial.depth)
+  let matrices: [CMat, CMat] = $state(initial.matrices)
+  let showIso = $state(initial.showIso)
+
   let rawColors = $derived(getTheme().canvas.isometryColors)
   let activeIdx = $derived([0, 1].filter(i => showIso[i] && !mIsSingular(matrices[i])))
   let gens = $derived(activeIdx.map(i => matrices[i]))
   let colors = $derived(activeIdx.flatMap(i => rawColors[i].map(c => new Color(c))))
 
-  let depth: number = $state(5)
   let isoFocus: { id: number; elt: number } | undefined = $state()
 
   let focusedComplex = $derived.by(() => {
@@ -39,44 +67,20 @@
     urlReferenceCopied = false
   })
 
-  const MATRIX_KEYS = ['a', 'b'] as const
-  const SHOW_KEYS = ['showa', 'showb'] as const
-
-  function parseMatrixParam(params: URLSearchParams, key: string): CMat | undefined {
-    const raw = params.get(key)
-    if (!raw) return undefined
-    const list = raw.split(' ').map(Number)
-    if (list.length !== 8 || !list.every(Number.isFinite)) return undefined
-    return Array.from({length: 4}, (_, i) => ({re: list[2*i], im: list[2*i+1]})) as CMat
-  }
-
   function copyUrlReference() {
     let params = new URLSearchParams()
     params.append('d', depth.toString())
 
     for (let i = 0; i < 2; i++) {
       if (!showIso[i]) continue
-      params.append(MATRIX_KEYS[i], matrices[i].flatMap(z => [z.re, z.im]).join(' '))
-      params.append(SHOW_KEYS[i], '1')
+      params.append(matrixKey(i), matrices[i].flatMap(z => [z.re, z.im]).join(' '))
+      params.append(showKey(i), '1')
     }
 
     const url = new URL(window.location.href);
     navigator.clipboard.writeText(`${url.origin}${url.pathname}?${params}`)
       .then(() => urlReferenceCopied = true)
   }
-
-  onMount(() => {
-    const params = new URLSearchParams(window.location.search)
-    const d = Number(params.get('d'))
-    depthElt.set(Number.isInteger(d) && d >= 1 ? d : 10)
-    for (let i = 0; i < 2; i++) {
-      const m = parseMatrixParam(params, MATRIX_KEYS[i])
-      if (m) {
-        matrices[i] = m
-        showIso[i] = params.get(SHOW_KEYS[i]) === '1'
-      }
-    }
-  })
 
   let animateIdx: number | undefined = $state()
   let animateIso = $derived(animateIdx === undefined ? undefined : matrices[animateIdx])
@@ -97,9 +101,9 @@
   </div>
   <div class="sidebar">
     <div class="sidebar-row">
-      Depth<StepperInput bind:this={depthElt} onchange={v => depth = v} init={depth} min={1} max={20} />
+      Depth<StepperInput onchange={v => depth = v} init={depth} min={1} max={20} />
     </div>
-    {#each [0, 1] as _, i}
+    {#each [0, 1] as i}
       <div class="sidebar-row">
       <input type="checkbox" name="isometry{i+1}" bind:checked={showIso[i]} />Isometry {i + 1}
       <div class="combined-elements">
@@ -127,7 +131,7 @@
     </div>
     <div class="sidebar-row">
       Theme <select bind:value={themeInput}>
-        {#each Object.values(themes) as theme}
+        {#each themes as theme}
           <option>{theme.name}</option>
         {/each}
       </select>

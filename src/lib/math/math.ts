@@ -5,36 +5,36 @@ export interface Complex {
   im: number
 }
 
-export function cmplx(re: number, im: number): Complex {
+export function complex(re: number, im: number = 0): Complex {
   return { re, im }
 }
 
 export function cmul(a: Complex, b: Complex): Complex {
-  return cmplx(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re)
+  return complex(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re)
 }
 
 export function conj(z: Complex): Complex {
-  return cmplx(z.re, -z.im)
+  return complex(z.re, -z.im)
 }
 
 export function cadd(a: Complex, b: Complex): Complex {
-  return cmplx(a.re + b.re, a.im + b.im)
+  return complex(a.re + b.re, a.im + b.im)
 }
 
 export function cradd(a: Complex, b: number): Complex {
-  return cmplx(a.re + b, a.im)
+  return complex(a.re + b, a.im)
 }
 
 export function csub(a: Complex, b: Complex): Complex {
-  return cmplx(a.re - b.re, a.im - b.im)
+  return complex(a.re - b.re, a.im - b.im)
 }
 
 export function crsub(a: Complex, b: number): Complex {
-  return cmplx(a.re - b, a.im)
+  return complex(a.re - b, a.im)
 }
 
 export function cneg(a: Complex): Complex {
-  return cmplx(-a.re, -a.im)
+  return complex(-a.re, -a.im)
 }
 
 export function cnorm(a: Complex): number {
@@ -51,37 +51,37 @@ export function cdot(a: Complex, b: Complex): number {
 
 export function cdiv(a: Complex, b: Complex): Complex {
   const n = cnormsq(b)
-  return cmplx((a.re * b.re + a.im * b.im) / n, (b.re * a.im - b.im * a.re) / n)
+  return complex((a.re * b.re + a.im * b.im) / n, (b.re * a.im - b.im * a.re) / n)
 }
 
 export function crmul(a: Complex, b: number): Complex {
-  return cmplx(a.re * b, a.im * b)
+  return complex(a.re * b, a.im * b)
 }
 
 export function crdiv(a: Complex, b: number): Complex {
-  return cmplx(a.re / b, a.im / b)
+  return complex(a.re / b, a.im / b)
 }
 
 // z / |z|  (unit direction of z, not the reciprocal)
 export function cnormalize(a: Complex): Complex {
   const n = cnorm(a)
-  return cmplx(a.re / n, a.im / n)
+  return complex(a.re / n, a.im / n)
 }
 
 export function cexp(a: Complex): Complex {
   const r = Math.exp(a.re)
-  return cmplx(r * Math.cos(a.im), r * Math.sin(a.im))
+  return complex(r * Math.cos(a.im), r * Math.sin(a.im))
 }
 
 // csqrt has two branches: purely-imaginary axis (z.re≤0, z.im=0) avoids
 // cancellation in the general formula.
 export function csqrt(z: Complex): Complex {
   if (z.im === 0 && z.re <= 0) {
-    return cmplx(0, Math.sqrt(-z.re))
+    return complex(0, Math.sqrt(-z.re))
   }
   const r = cnorm(z)
   const mul = Math.sqrt(r/((z.re+r)**2 + z.im**2))
-  return cmplx((z.re+r)*mul, z.im*mul)
+  return complex((z.re+r)*mul, z.im*mul)
 }
 
 export function csqr(a: Complex): Complex {
@@ -109,7 +109,7 @@ export function cpow(z: Complex, exp: number) {
   const r = cnorm(z)
   const newtheta = Math.atan2(z.im, z.re)*exp
   const newr = r**exp
-  return cmplx(newr * Math.cos(newtheta), newr * Math.sin(newtheta))
+  return complex(newr * Math.cos(newtheta), newr * Math.sin(newtheta))
 }
 
 export type CMat = [Complex, Complex, Complex, Complex]
@@ -145,7 +145,7 @@ export function minv(a: CMat): CMat {
 }
 
 export function mId(): CMat {
-  return [cmplx(1, 0), cmplx(0, 0), cmplx(0, 0), cmplx(1, 0)]
+  return [complex(1, 0), complex(0, 0), complex(0, 0), complex(1, 0)]
 }
 
 // Raises a 2x2 matrix to a (possibly non-integer) power via Cayley-Hamilton:
@@ -177,10 +177,6 @@ export function mpow(m: CMat, n: number): CMat {
     cmul(alpha, m[2]),
     cadd(cmul(alpha, m[3]), beta),
   ]
-}
-
-export function complex(re: number, im: number = 0): Complex {
-  return cmplx(re, im)
 }
 
 export function mIsId(a: CMat, e = 0) {
@@ -225,11 +221,10 @@ export function vrmul(a: Vec3, b: number): Vec3 {
   return vec3(a.x * b, a.y * b, a.z * b)
 }
 
-export function vrdiv_(a: Vec3, b: number): Vec3 {
+export function vrdiv_(a: Vec3, b: number): void {
   a.x /= b
   a.y /= b
   a.z /= b
-  return a
 }
 
 export function vnormsq(v: Vec3): number {

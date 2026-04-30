@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { onMount, untrack } from 'svelte'
+  import { onMount } from 'svelte'
   import { getTheme, type Theme } from '../../style/themes/themes.svelte'
-  import { cadd, cEqualOpt, cequal, cnormsq, complex, crmul, csub, type Complex } from '../math/math'
+  import { cadd, cEqualOpt, cequal, complex, cnormsq, crmul, csub, type Complex } from '../math/math'
   import { useAnimationTimer } from '../utils/useAnimationTimer.svelte'
   import { useDrag } from '../utils/useDrag.svelte'
   import { useShiftKey } from '../utils/useShiftKey.svelte'
@@ -26,12 +26,9 @@
     const dpr = window.devicePixelRatio || 1
     width = canvas.clientWidth * dpr
     height = canvas.clientHeight * dpr
-  }
-  $effect(() => syncCanvasSize())
-  $effect(() => {
     canvas.width = width
     canvas.height = height
-  })
+  }
 
   const ctrl = echoGuard({
     read: () => value,
@@ -43,21 +40,21 @@
     },
   })
 
-  const MIN_X = -3
-  const MAX_X = 3
-  const MIN_Y = -3
-  const MAX_Y = 3
+  // World coordinates span [-RANGE, RANGE] in both axes.
+  const RANGE = 3
 
   function worldToScreen(c: Complex, width: number, height: number) {
-    const x = ((c.re - MIN_X) / (MAX_X - MIN_X)) * width
-    const y = height - ((c.im - MIN_Y) / (MAX_Y - MIN_Y)) * height
-    return { x, y }
+    return {
+      x: ((c.re + RANGE) / (2 * RANGE)) * width,
+      y: height - ((c.im + RANGE) / (2 * RANGE)) * height,
+    }
   }
 
   function screenToWorld(x: number, y: number, width: number, height: number): Complex {
-    const re = (x / width) * (MAX_X - MIN_X) + MIN_X
-    const im = ((height - y) / height) * (MAX_Y - MIN_Y) + MIN_Y
-    return complex(re, im)
+    return complex(
+      (x / width) * 2 * RANGE - RANGE,
+      ((height - y) / height) * 2 * RANGE - RANGE,
+    )
   }
 
   // Animation loop to smoothly interpolate pos towards target
@@ -118,48 +115,40 @@
     onStart: () => ({ startValue: pos }),
   })
 
+  // With shift held, the larger-magnitude axis is followed; the other is
+  // pinned to its drag-start value. snapAxis persists across re-runs of the
+  // effect so a shift-drag stays locked once committed.
+  let snapAxis: 'x' | 'y' | undefined
   $effect(() => {
-    if (!drag.state.dragging) return
-    const d = drag.state // TypeScript type narrowing
+    if (!drag.state.dragging) {
+      snapAxis = undefined
+      return
+    }
+    const d = drag.state
+    const rect = canvas.getBoundingClientRect()
+    const x = (d.mouse.x - rect.left) * window.devicePixelRatio
+    const y = (d.mouse.y - rect.top) * window.devicePixelRatio
+    const freeTarget = screenToWorld(x, y, canvas.width, canvas.height)
 
-    const freeTarget = $derived.by(() => {
-      const rect = canvas.getBoundingClientRect()
-      const x = (d.mouse.x - rect.left) * window.devicePixelRatio
-      const y = (d.mouse.y - rect.top) * window.devicePixelRatio
-      return screenToWorld(x, y, canvas.width, canvas.height)
-    })
+    if (!shift.down) {
+      snapAxis = undefined
+      target = freeTarget
+      return
+    }
 
-    // Which axis is locked during a shift-drag: updated by the effect below.
-    let snapAxis: 'x' | 'y' | undefined = $state()
+    const dx = Math.abs(freeTarget.re - d.data.startValue.re)
+    const dy = Math.abs(freeTarget.im - d.data.startValue.im)
+    if (snapAxis === 'x' && dy > 0.3) snapAxis = undefined
+    if (snapAxis === 'y' && dx > 0.3) snapAxis = undefined
+    if (!snapAxis) snapAxis = dx > dy ? 'x' : 'y'
 
-    $effect(() => {
-      if (shift.down) {
-        let currentSnap = untrack(() => snapAxis)
-        const dx = Math.abs(freeTarget.re - d.data.startValue.re)
-        const dy = Math.abs(freeTarget.im - d.data.startValue.im)
-
-        if (currentSnap === 'x' && dy > 0.3) currentSnap = undefined
-        if (currentSnap === 'y' && dx > 0.3) currentSnap = undefined
-        if (!currentSnap) snapAxis = dx > dy ? 'x' : 'y'
-      } else {
-        snapAxis = undefined
-      }
-    })
-
-    // With shift held, the larger-magnitude axis is followed; the other is
-    // pinned to its drag-start value.
-    const newTarget = $derived(
-      !shift.down ? freeTarget
-        : snapAxis === 'x' ? complex(freeTarget.re, d.data.startValue.im)
-        : complex(d.data.startValue.re, freeTarget.im)
-    )
-
-    $effect(() => {
-      target = newTarget
-    })
+    target = snapAxis === 'x'
+      ? complex(freeTarget.re, d.data.startValue.im)
+      : complex(d.data.startValue.re, freeTarget.im)
   })
 
   onMount(() => {
+    syncCanvasSize()
     const resizeObserver = new ResizeObserver(syncCanvasSize)
     resizeObserver.observe(canvas, {box: 'device-pixel-content-box'})
     return () => resizeObserver.disconnect()

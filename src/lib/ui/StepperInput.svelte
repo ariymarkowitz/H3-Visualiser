@@ -17,18 +17,12 @@
   let prevInput: string = $state(init.toString())
   let numericValue: number = $state(init)
 
-  export const set = (n: number): boolean => {
-    if (n !== numericValue) {
-      numericValue = n
-      value = n.toString()
-      return true
-    }
-    return false
-  }
-
   function step(direction: 1 | -1) {
     const n = numericValue + direction
-    if (n >= min && n <= max && set(n)) onchange(n)
+    if (n < min || n > max) return
+    numericValue = n
+    value = n.toString()
+    onchange(n)
   }
 
   function onInput() {

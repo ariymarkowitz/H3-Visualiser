@@ -10,27 +10,16 @@
     onkeydown?: (e: { index: number, key: string }) => void
   }
   let { value = $bindable(), onfocus = _ => {}, onkeydown = _ => {} }: MatrixInputProps = $props()
-  let focus: number | undefined = $state()
-
-  function keydown(i: number, e: KeyboardEvent) {
-    onkeydown({ index: i, key: e.key })
-  }
 </script>
 
 <div class="matrix-input-container">
   <div class="matrix-bracket"></div>
   <div class="matrix-input">
-    {#each [0, 1, 2, 3] as _, i}
+    {#each [0, 1, 2, 3] as i}
       <ComplexInput
-      bind:value={value[i]}
-      onfocus={() => {
-        focus = i
-        onfocus(i)
-      }}
-      onblur={() => {
-        if (focus === i) focus = undefined
-      }}
-      onkeydown={e => keydown(i, e)}
+        bind:value={value[i]}
+        onfocus={() => onfocus(i)}
+        onkeydown={e => onkeydown({ index: i, key: e.key })}
       />
     {/each}
   </div>

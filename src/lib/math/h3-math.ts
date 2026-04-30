@@ -1,7 +1,7 @@
 import {
   cadd,
   cdot,
-  cmplx,
+  complex,
   cnorm,
   cnormsq,
   crmul,
@@ -47,8 +47,8 @@ export function toBallCmplx(z: Complex): Vec3 {
 
 export function endsOfGeodesic(a: Quaternion, b: Quaternion): [Complex, Complex] {
   const m = (qnormsq(a) - qnormsq(b)) / 2
-  const aCmplx = cmplx(a.r, a.i)
-  const d = cmplx(a.r - b.r, a.i - b.i)
+  const aCmplx = complex(a.r, a.i)
+  const d = complex(a.r - b.r, a.i - b.i)
   const d_normsq = cnormsq(d)
   const d_dot_a = cdot(d, aCmplx)
 
@@ -78,7 +78,8 @@ export function geodesic(a: Quaternion, b: Quaternion, divisions: number, arr: n
   // to the positions of the boundary points.
   const scale = vnormsq(x) + vnormsq(y)
   if (isNaN(midn) || midn < 1e-10 * scale) {
-    const step = vrdiv_(vsub(p2, p1), divisions - 1)
+    const step = vsub(p2, p1)
+    vrdiv_(step, divisions - 1)
 
     arr.push(p1.x, p1.y, p1.z)
     const current = vclone(p1)

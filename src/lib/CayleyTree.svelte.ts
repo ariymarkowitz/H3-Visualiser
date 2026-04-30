@@ -29,8 +29,8 @@ export interface TreeUniforms {
 }
 
 export class CayleyTree {
-  mesh: LineSegments2 | undefined
-  geometry?: LineSegmentsGeometry
+  mesh: LineSegments2
+  geometry: LineSegmentsGeometry
   material: LineMaterial
   generators: CMat[] = []
   depth = 0
@@ -41,7 +41,6 @@ export class CayleyTree {
   minSize = 0.015
 
   uniforms: TreeUniforms | undefined = $state()
-  ready: boolean = $state(false)
 
   constructor(width: number, height: number) {
     this.material = new LineMaterial({
@@ -75,20 +74,13 @@ export class CayleyTree {
       fadeStrength: { value: 0 },
     })
     $effect(() => {
-      if (!this.uniforms) {
-        this.ready = false
-        return
-      }
+      if (!this.uniforms) return
       for (const [k, v] of Object.entries(this.uniforms)) {
         this.material.uniforms[k].value = v
       }
     })
     this.geometry = new LineSegmentsGeometry()
-    $effect(() => {
-      if (!this.uniforms || this.ready) return
-      this.mesh = new LineSegments2(this.geometry, this.material)
-      this.ready = true
-    })
+    this.mesh = new LineSegments2(this.geometry, this.material)
   }
 
   setGeometry(baseGens: CMat[], colors: THREE.Color[], depth: number, start: CMat = mId()) {
@@ -107,12 +99,12 @@ export class CayleyTree {
     const startQuat = mobius(start)
     this._tree(0, 1, undefined, startQuat, start, toBall(startQuat), data)
 
-    if (this.geometry) this.geometry.dispose()
+    this.geometry.dispose()
     this.geometry = new LineSegmentsGeometry()
 
     this.geometry.setPositions(data.lines)
     this.geometry.setColors(data.lineColors)
-    if (this.mesh) this.mesh.geometry = this.geometry
+    this.mesh.geometry = this.geometry
   }
 
   _tree(
@@ -150,7 +142,7 @@ export class CayleyTree {
   }
 
   dispose() {
-    this.geometry?.dispose()
+    this.geometry.dispose()
     this.material.dispose()
   }
 }

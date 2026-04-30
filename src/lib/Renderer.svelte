@@ -25,7 +25,6 @@
 
   let { width, height, depth, gens, colors, animateIso }: RendererProps = $props()
 
-  let t = 0
   $effect(() => {
     if (!animateIso) updateTree(gens, colors, depth)
   })
@@ -46,7 +45,6 @@
   let renderer: THREE.WebGLRenderer | undefined = $state()
   let axis: THREE.AxesHelper | undefined = $state()
   let matShader: THREE.ShaderMaterial | undefined = $state()
-  let scene: THREE.Scene | undefined = $state()
   let setDirty: (() => void) | undefined = $state()
 
   $effect(() => {
@@ -76,12 +74,6 @@
   })
 
   $effect(() => {
-    if (!tree || !scene || !tree.ready) return
-    if (!tree.mesh) throw new Error("Mesh is undefined")
-    scene.add(tree.mesh)
-  })
-
-  $effect(() => {
     if (!tree || !setDirty) return
     if (tree.uniforms) setDirty()
   })
@@ -98,7 +90,6 @@
     renderer.autoClear = false
 
     const _scene = new THREE.Scene()
-    scene = _scene
     const maskScene = new THREE.Scene()
     const maskScene2 = new THREE.Scene()
     const outScene = new THREE.Scene()
@@ -183,37 +174,34 @@
     controls.addEventListener('change', markDirty)
 
     tree = new CayleyTree(width, height)
+    _scene.add(tree.mesh)
     updateTree = (gens, colors, depth, iso) => {
       if (!tree) return
       tree.setGeometry(gens, colors, depth, iso)
       markDirty()
     }
 
-    let _time: number | undefined
+    let t = 0
+    let lastTime: number | undefined
     function animate(time: number) {
       id = requestAnimationFrame(animate)
       controls.update()
       const camPos = camera.position.clone()
       cameraPos.set(camPos)
-      if (animateIso) dirty = true
-      if (dirty) {
-        if (animateIso) {
-          if (_time) {
-            const dt = time - _time
-            t = (t + dt/4000) % 1
-          } else {
-            t = 0
-          }
-          const iso = mpow(animateIso, t)
-          updateTree(gens, colors, depth, iso)
-          _time = time
-        } else {
-          dirty = false
-          _time = undefined
-        }
 
+      if (animateIso) {
+        t = lastTime === undefined ? 0 : (t + (time - lastTime)/4000) % 1
+        lastTime = time
+        updateTree(gens, colors, depth, mpow(animateIso, t))
+        dirty = true
+      } else {
+        lastTime = undefined
+      }
+
+      if (dirty) {
         matShader!.uniforms.offset.value = 0.003 * camPos.length()
         composer.render()
+        if (!animateIso) dirty = false
       }
     }
 
