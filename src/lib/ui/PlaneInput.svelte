@@ -59,29 +59,27 @@
   }
 
   // Animation loop to smoothly interpolate pos towards target
-  let dz: Complex = $derived(csub(target, pos))
-
   const anim = useAnimationTimer(dt => {
     const factor = 1 - Math.exp(-dt / 90) // 90ms decay
-
-    if (!cequal(pos, target)) ctrl.emit(pos)
-
+    const dz = csub(target, pos)
     if (cnormsq(dz) < 1e-4) {
       pos = target
       anim.stop()
     } else {
       pos = cadd(pos, crmul(dz, factor))
+      ctrl.emit(pos)
     }
-
-    draw(canvas, width, height, getTheme())
   })
+
   $effect(() => {
-    // Touch reactive deps so the timer wakes when they change.
-    void [canvas, width, height, getTheme(), target, dz]
-    anim.start()
+    if (!cequal(pos, target)) anim.start()
   })
 
-  function draw(canvas: HTMLCanvasElement, width: number, height: number, theme: Theme) {
+  $effect(() => {
+    draw(canvas, width, height, pos, getTheme())
+  })
+
+  function draw(canvas: HTMLCanvasElement, width: number, height: number, pos: Complex, theme: Theme) {
     const ctx = canvas.getContext('2d')
     if (!canvas || !ctx) return
 
