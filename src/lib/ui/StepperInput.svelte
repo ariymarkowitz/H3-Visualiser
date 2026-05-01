@@ -1,34 +1,31 @@
 <script lang='ts'>
-  import { untrack } from 'svelte'
-
-  type StepperInputProps = Partial<{
-    min: number
-    max: number
-    init: number
-    onchange: (value: number) => void
-  }>
+  type StepperInputProps = {
+    min?: number
+    max?: number
+    value: number
+  }
 
   let {
     min = 1,
     max = 100,
-    init = min,
-    onchange = _ => {}
+    value = $bindable()
   }: StepperInputProps = $props()
 
-  let numericValue: number = $state(untrack(() => init))
-  let value: string = $state(untrack(() => init.toString()))
-  let acceptedValue: string = untrack(() => init.toString())
+  let text: string = $state(value.toString())
+  let acceptedText: string = value.toString()
 
-  function commit(n: number) {
-    numericValue = n
-    value = n.toString()
-    acceptedValue = value
-    onchange(n)
-  }
+  // Sync external value changes into the input text.
+  $effect(() => {
+    const s = value.toString()
+    if (s !== text) {
+      text = s
+      acceptedText = s
+    }
+  })
 
   function step(direction: 1 | -1) {
-    const n = numericValue + direction
-    if (n >= min && n <= max) commit(n)
+    const n = value + direction
+    if (n >= min && n <= max) value = n
   }
 
   // Allow an initial substring of a valid number within bounds.
@@ -39,22 +36,22 @@
   }
 
   function onInput() {
-    if (value === '') {
-      acceptedValue = value
+    if (text === '') {
+      acceptedText = text
       return
     }
-    const n = parseInput(value)
+    const n = parseInput(text)
     if (n === null) {
-      value = acceptedValue
+      text = acceptedText
       return
     }
-    acceptedValue = value
-    if (n >= min) commit(n)
+    acceptedText = text
+    if (n >= min) value = n
   }
 </script>
 
 <div class='number-input'>
-  <input type='text' bind:value oninput={onInput}/>
+  <input type='text' bind:value={text} oninput={onInput}/>
   <div class='number-input-buttons'>
     <button type="button" aria-label="Increment" class='number-input-up' onclick={() => step(1)}><i></i></button>
     <button type="button" aria-label="Decrement" class='number-input-down' onclick={() => step(-1)}><i></i></button>

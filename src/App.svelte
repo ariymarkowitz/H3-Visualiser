@@ -59,7 +59,7 @@
   </div>
   <div class="sidebar">
     <div class="sidebar-row">
-      Depth<StepperInput onchange={v => depth = v} init={depth} min={1} max={20} />
+      Depth<StepperInput bind:value={depth} min={1} max={20} />
     </div>
     {#each [0, 1] as i}
       <div class="sidebar-row">
