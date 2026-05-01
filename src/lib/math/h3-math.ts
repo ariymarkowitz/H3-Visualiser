@@ -12,13 +12,10 @@ import {
   quat,
   rotate,
   vadd,
-  vadd_,
-  vclone,
   vdistsq,
   vec3,
   vnormalize,
   vnormsq,
-  vrdiv_,
   vrmul,
   vsub,
   type CMat,
@@ -78,14 +75,16 @@ export function geodesic(a: Quaternion, b: Quaternion, divisions: number, arr: n
   // to the positions of the boundary points.
   const scale = vnormsq(x) + vnormsq(y)
   if (isNaN(midn) || midn < 1e-10 * scale) {
-    const step = vsub(p2, p1)
-    vrdiv_(step, divisions - 1)
+    const n = divisions - 1
+    const sx = (p2.x - p1.x) / n
+    const sy = (p2.y - p1.y) / n
+    const sz = (p2.z - p1.z) / n
 
     arr.push(p1.x, p1.y, p1.z)
-    const current = vclone(p1)
-    for (let i = 1; i < divisions - 1; i++) {
-      vadd_(current, step)
-      arr.push(current.x, current.y, current.z, current.x, current.y, current.z)
+    let cx = p1.x, cy = p1.y, cz = p1.z
+    for (let i = 1; i < n; i++) {
+      cx += sx; cy += sy; cz += sz
+      arr.push(cx, cy, cz, cx, cy, cz)
     }
     arr.push(p2.x, p2.y, p2.z)
 

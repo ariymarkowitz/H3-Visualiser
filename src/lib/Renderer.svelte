@@ -4,7 +4,7 @@
     height: number
     depth: number
     gens: CMat[]
-    rawColors: string[]
+    rawColors: string[][]
     animateIso?: CMat
   }
 
@@ -38,7 +38,7 @@
 
   let { width, height, depth, gens, rawColors, animateIso }: RendererProps = $props()
 
-  let colors = $derived(rawColors.map(c => new THREE.Color(c)))
+  let colors = $derived(rawColors.map(pair => pair.map(c => new THREE.Color(c))))
 
   let dpr = window.devicePixelRatio
   let canvas: HTMLCanvasElement
@@ -50,7 +50,7 @@
     matShader: THREE.ShaderMaterial
     tree: CayleyTree
     markDirty: () => void
-    updateTree: (gens: CMat[], colors: THREE.Color[], depth: number, iso?: CMat) => void
+    updateTree: (gens: CMat[], colors: THREE.Color[][], depth: number, iso?: CMat) => void
   }
   let scene: Scene | undefined = $state()
   let cameraPos: THREE.Vector3 | undefined = $state.raw()
@@ -88,10 +88,9 @@
     const renderer = new THREE.WebGLRenderer({ antialias: true, canvas })
     renderer.setSize(width, height, false)
     renderer.setPixelRatio(dpr)
-    renderer.setClearColor(0xffffff)
     renderer.autoClear = false
 
-    const _scene = new THREE.Scene()
+    const mainScene = new THREE.Scene()
     const maskScene = new THREE.Scene()
     const maskScene2 = new THREE.Scene()
     const outScene = new THREE.Scene()
@@ -105,7 +104,7 @@
     controls.rotateSpeed = 2
 
     const axis = new THREE.AxesHelper(1)
-    _scene.add(axis)
+    mainScene.add(axis)
 
     const sphereGeo = new THREE.SphereGeometry(1, 128, 64)
     const sphereMat = new THREE.MeshBasicMaterial({ color: 0x000000 })
@@ -123,7 +122,7 @@
     })
     outScene.add(new THREE.Mesh(sphereGeo, matShader))
 
-    const renderPass = new RenderPass(_scene, camera)
+    const renderPass = new RenderPass(mainScene, camera)
     const outline = new RenderPass(outScene, camera)
     outline.clear = false
     const mask = new MaskPass(maskScene, camera)
@@ -148,7 +147,7 @@
     composer.addPass(fxaaPass)
 
     const tree = new CayleyTree(width, height)
-    _scene.add(tree.mesh)
+    mainScene.add(tree.mesh)
 
     const updateTree: Scene['updateTree'] = (gens, colors, depth, iso) => {
       tree.setGeometry(gens, colors, depth, iso)

@@ -1,4 +1,6 @@
 <script lang='ts'>
+  import { echoGuard } from '../utils/echoGuard.svelte'
+
   type StepperInputProps = {
     min?: number
     max?: number
@@ -14,18 +16,19 @@
   let text: string = $state(value.toString())
   let acceptedText: string = value.toString()
 
-  // Sync external value changes into the input text.
-  $effect(() => {
-    const s = value.toString()
-    if (s !== text) {
-      text = s
-      acceptedText = s
-    }
+  const ctrl = echoGuard<number>({
+    read: () => value,
+    write: v => { value = v },
+    equal: (a, b) => a === b,
+    sync: v => {
+      text = v.toString()
+      acceptedText = text
+    },
   })
 
   function step(direction: 1 | -1) {
     const n = value + direction
-    if (n >= min && n <= max) value = n
+    if (n >= min && n <= max) ctrl.emit(n)
   }
 
   // Allow an initial substring of a valid number within bounds.
@@ -46,7 +49,7 @@
       return
     }
     acceptedText = text
-    if (n >= min) value = n
+    if (n >= min) ctrl.emit(n)
   }
 </script>
 

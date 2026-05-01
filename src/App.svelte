@@ -17,7 +17,7 @@
 
   let activeIdx = $derived([0, 1].filter(i => showIso[i] && !mIsSingular(matrices[i])))
   let gens = $derived(activeIdx.map(i => matrices[i]))
-  let rawColors = $derived(activeIdx.flatMap(i => getTheme().canvas.isometryColors[i]))
+  let rawColors = $derived(activeIdx.map(i => getTheme().canvas.isometryColors[i]))
 
   let isoFocus: { id: number; elt: number } | undefined = $state()
 
@@ -64,8 +64,7 @@
     {#each [0, 1] as i}
       <div class="sidebar-row">
       <input type="checkbox" name="isometry{i+1}" bind:checked={showIso[i]} />Isometry {i + 1}
-      <div class="combined-elements">
-        <MatrixInput
+      <MatrixInput
         bind:value={matrices[i]}
         onfocus={index => isoFocus = index === undefined ? undefined : { id: i, elt: index }}
         onkeydown={e => {
@@ -73,8 +72,7 @@
             matrixMakeDeterminantOne(i, e.index)
           }
         }}
-        />
-      </div>
+      />
     </div>
     {/each}
     <div class="sidebar-row">
@@ -173,10 +171,4 @@ main {
   }
 }
 
-.combined-elements {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.2em;
-}
 </style>

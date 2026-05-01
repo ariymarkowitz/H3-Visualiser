@@ -1,7 +1,6 @@
 import { mId, type CMat } from './math/math'
 
-const matrixKey = (i: number) => i === 0 ? 'a' : 'b'
-const showKey = (i: number) => i === 0 ? 'showa' : 'showb'
+const KEYS = [{ m: 'a', show: 'showa' }, { m: 'b', show: 'showb' }] as const
 
 export interface UrlState {
   depth: number
@@ -22,10 +21,10 @@ export function parseInitialState(): UrlState {
   const matrices: [CMat, CMat] = [mId(), mId()]
   const showIso = [false, false]
   for (let i = 0; i < 2; i++) {
-    const m = parseMatrixParam(params.get(matrixKey(i)))
+    const m = parseMatrixParam(params.get(KEYS[i].m))
     if (m) {
       matrices[i] = m
-      showIso[i] = params.get(showKey(i)) === '1'
+      showIso[i] = params.get(KEYS[i].show) === '1'
     }
   }
   return {
@@ -40,8 +39,8 @@ export function serializeState(state: UrlState): string {
   params.append('d', state.depth.toString())
   for (let i = 0; i < 2; i++) {
     if (!state.showIso[i]) continue
-    params.append(matrixKey(i), state.matrices[i].flatMap(z => [z.re, z.im]).join(' '))
-    params.append(showKey(i), '1')
+    params.append(KEYS[i].m, state.matrices[i].flatMap(z => [z.re, z.im]).join(' '))
+    params.append(KEYS[i].show, '1')
   }
   const url = new URL(window.location.href)
   return `${url.origin}${url.pathname}?${params}`

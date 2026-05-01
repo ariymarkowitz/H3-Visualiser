@@ -15,8 +15,6 @@ import {
 import { geodesic, mobius, toBall } from './math/h3-math'
 
 interface TreeData {
-  vertexColors: number[]
-  vertices: number[]
   lineColors: number[]
   lines: number[]
 }
@@ -85,23 +83,23 @@ export class CayleyTree {
     this.mesh = new LineSegments2(this.geometry, this.material)
   }
 
-  setGeometry(baseGens: CMat[], colors: THREE.Color[], depth: number, start: CMat = mId()) {
-    // Each generator g is paired with g^-1 so _tree can step in either direction.
-    // `colors` is parallel to the expanded generator list — index 2k is g, 2k+1 is g^-1.
-    this.generators = baseGens.flatMap((g, k): Generator[] => [
-      { matrix: g, color: [colors[2*k].r, colors[2*k].g, colors[2*k].b] },
-      { matrix: minv(g), color: [colors[2*k+1].r, colors[2*k+1].g, colors[2*k+1].b] },
-    ])
+  setGeometry(baseGens: CMat[], colors: THREE.Color[][], depth: number, start: CMat = mId()) {
+    // Each generator g is paired with g^-1 so traverse can step in either direction.
+    this.generators = baseGens.flatMap((g, k): Generator[] => {
+      const [c, ci] = colors[k]
+      return [
+        { matrix: g, color: [c.r, c.g, c.b] },
+        { matrix: minv(g), color: [ci.r, ci.g, ci.b] },
+      ]
+    })
     this.depth = depth
 
     const data: TreeData = {
-      vertexColors: [],
-      vertices: [],
       lineColors: [],
       lines: []
     }
     const startQuat = mobius(start)
-    this._tree(0, 1, undefined, startQuat, start, toBall(startQuat), data)
+    this.#traverse(0, 1, undefined, startQuat, start, toBall(startQuat), data)
 
     this.geometry.dispose()
     this.geometry = new LineSegmentsGeometry()
@@ -111,7 +109,7 @@ export class CayleyTree {
     this.mesh.geometry = this.geometry
   }
 
-  _tree(
+  #traverse(
     depth: number,
     edgeSize: number,
     genN: number | undefined,
@@ -136,14 +134,12 @@ export class CayleyTree {
       const subdivisions = Math.floor(Math.min(Math.max(childSize * 100, 2), 10))
 
       const [r, g, b] = gen.color
-      state.vertexColors.push(r, g, b)
-      state.vertices.push(newVertex.x, newVertex.y, newVertex.z)
       for (let li = 0; li < subdivisions * 2 - 2; li++) {
         state.lineColors.push(r, g, b)
       }
       geodesic(q, newQuat, subdivisions, state.lines)
 
-      this._tree(depth + 1, childSize, gi, newQuat, newMat, newVertex, state)
+      this.#traverse(depth + 1, childSize, gi, newQuat, newMat, newVertex, state)
     }
   }
 

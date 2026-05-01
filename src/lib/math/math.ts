@@ -1,5 +1,3 @@
-// Functions suffixed with _ mutate their first argument in place.
-
 export interface Complex {
   re: number
   im: number
@@ -13,24 +11,12 @@ export function cmul(a: Complex, b: Complex): Complex {
   return complex(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re)
 }
 
-export function conj(z: Complex): Complex {
-  return complex(z.re, -z.im)
-}
-
 export function cadd(a: Complex, b: Complex): Complex {
   return complex(a.re + b.re, a.im + b.im)
 }
 
-export function cradd(a: Complex, b: number): Complex {
-  return complex(a.re + b, a.im)
-}
-
 export function csub(a: Complex, b: Complex): Complex {
   return complex(a.re - b.re, a.im - b.im)
-}
-
-export function crsub(a: Complex, b: number): Complex {
-  return complex(a.re - b, a.im)
 }
 
 export function cneg(a: Complex): Complex {
@@ -60,17 +46,6 @@ export function crmul(a: Complex, b: number): Complex {
 
 export function crdiv(a: Complex, b: number): Complex {
   return complex(a.re / b, a.im / b)
-}
-
-// z / |z|  (unit direction of z, not the reciprocal)
-export function cnormalize(a: Complex): Complex {
-  const n = cnorm(a)
-  return complex(a.re / n, a.im / n)
-}
-
-export function cexp(a: Complex): Complex {
-  const r = Math.exp(a.re)
-  return complex(r * Math.cos(a.im), r * Math.sin(a.im))
 }
 
 // csqrt has two branches: purely-imaginary axis (z.re≤0, z.im=0) avoids
@@ -123,10 +98,6 @@ export function mmul(a: CMat, b: CMat): CMat {
   ]
 }
 
-export function mcmul(a: CMat, b: Complex): CMat {
-  return [cmul(a[0], b), cmul(a[1], b), cmul(a[2], b), cmul(a[3], b)]
-}
-
 export function det(a: CMat): Complex {
   return csub(cmul(a[0], a[3]), cmul(a[1], a[2]))
 }
@@ -136,7 +107,7 @@ export function tr(a: CMat): Complex {
 }
 
 export function mIsSingular(a: CMat): boolean {
-  return cnorm(det(a)) < 1e-10
+  return cnormsq(det(a)) < 1e-20
 }
 
 export function minv(a: CMat): CMat {
@@ -187,10 +158,9 @@ export function makedet1(m: CMat, i: number): Complex | undefined {
   if (cIsZero(m[3-i])) return undefined
   // Diagonal (i=0,3): m[i] = (m[1]*m[2] + 1) / m[3-i]
   // Anti-diagonal (i=1,2): m[i] = (m[0]*m[3] - 1) / m[3-i]
-  const numerator = (i === 0 || i === 3)
-    ? cradd(cmul(m[1], m[2]), 1)
-    : crsub(cmul(m[0], m[3]), 1)
-  return cdiv(numerator, m[3-i])
+  const diag = i === 0 || i === 3
+  const p = diag ? cmul(m[1], m[2]) : cmul(m[0], m[3])
+  return cdiv(complex(p.re + (diag ? 1 : -1), p.im), m[3-i])
 }
 
 export interface Vec3 {
@@ -203,12 +173,6 @@ export function vec3(x: number, y: number, z: number) {
   return { x, y, z }
 }
 
-export function vadd_(a: Vec3, b: Vec3): void {
-  a.x += b.x
-  a.y += b.y
-  a.z += b.z
-}
-
 export function vadd(a: Vec3, b: Vec3): Vec3 {
   return vec3(a.x + b.x, a.y + b.y, a.z + b.z)
 }
@@ -219,12 +183,6 @@ export function vsub(a: Vec3, b: Vec3): Vec3 {
 
 export function vrmul(a: Vec3, b: number): Vec3 {
   return vec3(a.x * b, a.y * b, a.z * b)
-}
-
-export function vrdiv_(a: Vec3, b: number): void {
-  a.x /= b
-  a.y /= b
-  a.z /= b
 }
 
 export function vnormsq(v: Vec3): number {
@@ -248,10 +206,6 @@ export function vdist(a: Vec3, b: Vec3): number {
   return Math.sqrt(vdistsq(a, b))
 }
 
-export function vclone(v: Vec3): Vec3 {
-  return vec3(v.x, v.y, v.z)
-}
-
 export function vdot(a: Vec3, b: Vec3) {
   return a.x * b.x + a.y * b.y + a.z * b.z
 }
@@ -267,8 +221,8 @@ export interface Quaternion {
   k: number
 }
 
-export function quat(re: number, i: number, j: number, k: number): Quaternion {
-  return { r: re, i, j, k }
+export function quat(r: number, i: number, j: number, k: number): Quaternion {
+  return { r, i, j, k }
 }
 
 export function qnormsq(a: Quaternion) {
