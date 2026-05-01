@@ -13,10 +13,14 @@ const results = {
 
 /**
  * A reactive text input validator.
- * When `text` changes, the value is either:
- * - rejected (revert to last accepted text)
- * - accepted (update text but emit nothing)
- * - emitted (update text and emit a value)
+ * 
+ * The `parse` function is called whenever `validate` is fired;
+ * it receives the new text and `{ reject, accept, emit }` results to return.
+ * 
+ * Depending on the return value of `parse`, one of three things happens:
+ * - `reject`: the change is rejected and the text reverts to the last accepted value.
+ * - `accept`: the change is accepted but no value is emitted.
+ * - `emit(value)`: the change is accepted and `opts.onEmit(value)` is called.
  */
 export function validator<T>(opts: {
   parse: (text: string, results: ValidatorResults) => ParseResult<T>,
@@ -29,7 +33,7 @@ export function validator<T>(opts: {
     get text() { return text },
     set text(v: string) { text = v },
     set(v: string) { text = v; acceptedText = v },
-    onInput(): void {
+    validate(): void {
       const r = opts.parse(text, results)
       if (r.kind === 'reject') { text = acceptedText; return }
       acceptedText = text

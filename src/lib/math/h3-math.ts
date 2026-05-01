@@ -52,12 +52,24 @@ export function endsOfGeodesic(a: Quaternion, b: Quaternion): [Complex, Complex]
   const t = (m - d_dot_a) / d_normsq
   const center = cadd(crmul(d, t), aCmplx)
 
+  // Distance from `a` to (center, 0, 0) — the radius of the semicircle whose
+  // ends on the boundary plane (j=k=0) define this geodesic.
   const radius = Math.sqrt((a.r - center.re) ** 2 + (a.i - center.im) ** 2 + a.j ** 2 + a.k ** 2)
   const endDif = crmul(d, radius / cnorm(d))
   const end1 = cadd(center, endDif)
   const end2 = csub(center, endDif)
 
   return [end1, end2]
+}
+
+// Polyline endpoint: emitted once.
+function pushEndpoint(arr: number[], v: Vec3) {
+  arr.push(v.x, v.y, v.z)
+}
+
+// Interior vertex shared by two line segments: emitted twice.
+function pushJoint(arr: number[], v: Vec3) {
+  arr.push(v.x, v.y, v.z, v.x, v.y, v.z)
 }
 
 export function geodesic(a: Quaternion, b: Quaternion, divisions: number, arr: number[]): void {
@@ -74,42 +86,24 @@ export function geodesic(a: Quaternion, b: Quaternion, divisions: number, arr: n
   // Scale the threshold by the magnitude of x and y so the test is invariant
   // to the positions of the boundary points.
   const scale = vnormsq(x) + vnormsq(y)
-  if (isNaN(midn) || midn < 1e-10 * scale) {
-    const n = divisions - 1
-    const sx = (p2.x - p1.x) / n
-    const sy = (p2.y - p1.y) / n
-    const sz = (p2.z - p1.z) / n
+  const isStraight = isNaN(midn) || midn < 1e-10 * scale
 
-    arr.push(p1.x, p1.y, p1.z)
-    let cx = p1.x, cy = p1.y, cz = p1.z
-    for (let i = 1; i < n; i++) {
-      cx += sx; cy += sy; cz += sz
-      arr.push(cx, cy, cz, cx, cy, cz)
+  pushEndpoint(arr, p1)
+  if (isStraight) {
+    const step = vrmul(vsub(p2, p1), 1 / (divisions - 1))
+    let current = p1
+    for (let i = 1; i < divisions - 1; i++) {
+      current = vadd(current, step)
+      pushJoint(arr, current)
     }
-    arr.push(p2.x, p2.y, p2.z)
-
-    return
+  } else {
+    const center = vrmul(mid, (1 + vdistsq(x, y) / midn) / 2)
+    const interp = qlerp(vnormalize(vsub(p1, center)), vnormalize(vsub(p2, center)), 1 / (divisions - 1))
+    let current = vsub(p1, center)
+    for (let i = 1; i < divisions - 1; i++) {
+      current = rotate(current, interp)
+      pushJoint(arr, vadd(current, center))
+    }
   }
-
-  const center = vrmul(mid, (1 + vdistsq(x, y) / midn) / 2)
-
-  const rel1 = vsub(p1, center)
-  const rel2 = vsub(p2, center)
-
-  // Compute interpolation of points.
-  const rn1 = vnormalize(rel1)
-  const rn2 = vnormalize(rel2)
-
-  const interp = qlerp(rn1, rn2, 1 / (divisions - 1))
-  let current = rel1
-
-  arr.push(p1.x, p1.y, p1.z)
-  for (let i = 1; i < divisions - 1; i++) {
-    current = rotate(current, interp)
-    const x = current.x + center.x
-    const y = current.y + center.y
-    const z = current.z + center.z
-    arr.push(x, y, z, x, y, z)
-  }
-  arr.push(p2.x, p2.y, p2.z)
+  pushEndpoint(arr, p2)
 }

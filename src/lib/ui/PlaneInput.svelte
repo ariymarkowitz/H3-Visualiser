@@ -141,9 +141,8 @@
 
   $effect(() => {
     if (!freeTarget) return
-    const start = drag.state.dragging ? drag.state.data.startValue : freeTarget
-    target = snapAxis.value === 'x' ? complex(freeTarget.re, start.im)
-      : snapAxis.value === 'y' ? complex(start.re, freeTarget.im)
+    target = snapAxis.value === 'x' ? complex(freeTarget.re, freeTarget.im)
+      : snapAxis.value === 'y' ? complex(freeTarget.re, freeTarget.im)
       : freeTarget
   })
 

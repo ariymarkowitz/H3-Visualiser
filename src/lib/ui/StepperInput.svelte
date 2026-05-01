@@ -34,12 +34,12 @@
 
   function step(direction: 1 | -1) {
     const n = value + direction
-    if (n >= min && n <= max) ctrl.emit(n)
+    if (n >= min && n <= max) value = n
   }
 </script>
 
 <div class='number-input'>
-  <input type='text' bind:value={input.text} oninput={input.onInput}/>
+  <input type='text' bind:value={input.text} oninput={input.validate}/>
   <div class='number-input-buttons'>
     <button type="button" aria-label="Increment" class='number-input-up' onclick={() => step(1)}><i></i></button>
     <button type="button" aria-label="Decrement" class='number-input-down' onclick={() => step(-1)}><i></i></button>

@@ -32,7 +32,7 @@ export function cnormsq(a: Complex): number {
 }
 
 export function cnorm(a: Complex): number {
-  return Math.sqrt(cnormsq(a))
+  return Math.hypot(a.re, a.im)
 }
 
 export function cdiv(a: Complex, b: Complex): Complex {
@@ -194,8 +194,7 @@ export function vnorm(v: Vec3): number {
 }
 
 export function vnormalize(v: Vec3): Vec3 {
-  const n = vnorm(v)
-  return vec3(v.x / n, v.y / n, v.z / n)
+  return vrmul(v, 1 / vnorm(v))
 }
 
 export function vdistsq(a: Vec3, b: Vec3): number {

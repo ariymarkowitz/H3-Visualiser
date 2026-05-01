@@ -163,8 +163,7 @@
       id = requestAnimationFrame(animate)
       controls.update()
 
-      const newCamPos = camera.position.clone()
-      if (!cameraPos || !newCamPos.equals(cameraPos)) cameraPos = newCamPos
+      if (!cameraPos || !cameraPos.equals(camera.position)) cameraPos = camera.position.clone()
 
       if (animateIso) {
         t = lastTime === undefined ? 0 : (t + (time - lastTime) / 4000) % 1
@@ -176,7 +175,7 @@
       }
 
       if (dirty) {
-        matShader.uniforms.offset.value = 0.003 * newCamPos.length()
+        matShader.uniforms.offset.value = 0.003 * camera.position.length()
         composer.render()
         if (!animateIso) dirty = false
       }

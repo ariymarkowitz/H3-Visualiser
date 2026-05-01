@@ -19,7 +19,7 @@
   // (so e.g. "+i" parses as +1*i).
   function signed(sign: string | undefined, mag: string | undefined): number {
     const s = sign === '-' ? -1 : 1
-    return mag ? s * parseFloat(mag) || 0 : s
+    return mag ? s * parseFloat(mag) : s
   }
 
   function parse(input: string): Complex {
@@ -63,4 +63,4 @@
   })
 </script>
 
-<input type='text' bind:value={input.text} oninput={input.onInput} {...rest} />
+<input type='text' bind:value={input.text} oninput={input.validate} {...rest} />
