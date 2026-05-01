@@ -241,10 +241,11 @@ export function qdiv(a: Quaternion, b: Quaternion) {
 export function qlerp(a: Vec3, b: Vec3, t: number): Quaternion {
   const d = vdot(a, b)
   if (d === 1) return quat(1, 0, 0, 0)
-  const v = vcross(a, b)
+  const ref = d === -1 ? (Math.abs(a.x) < 0.9 ? vec3(1, 0, 0) : vec3(0, 1, 0)) : b
+  const axis = vnormalize(vcross(a, ref))
   const half = Math.acos(d) * t / 2
-  const s = Math.sin(half) / vnorm(v)
-  return quat(Math.cos(half), v.x * s, v.y * s, v.z * s)
+  const s = Math.sin(half)
+  return quat(Math.cos(half), axis.x * s, axis.y * s, axis.z * s)
 }
 
 export function rotate(a: Vec3, q: Quaternion): Vec3 {
