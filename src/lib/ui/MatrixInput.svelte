@@ -7,7 +7,7 @@
   type MatrixInputProps = {
     value: CMat
     onfocus?: (index: number) => void
-    onkeydown?: (e: { index: number, key: string }) => void
+    onkeydown?: (index: number, e: KeyboardEvent) => void
   }
   let { value = $bindable(), onfocus, onkeydown }: MatrixInputProps = $props()
 </script>
@@ -19,7 +19,7 @@
       <ComplexInput
         bind:value={value[i]}
         onfocus={() => onfocus?.(i)}
-        onkeydown={e => onkeydown?.({ index: i, key: e.key })}
+        onkeydown={e => onkeydown?.(i, e)}
       />
     {/each}
   </div>

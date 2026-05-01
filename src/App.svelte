@@ -66,10 +66,10 @@
       <input type="checkbox" name="isometry{i+1}" bind:checked={showIso[i]} />Isometry {i + 1}
       <MatrixInput
         bind:value={matrices[i]}
-        onfocus={index => isoFocus = { id: i, elt: index }}
-        onkeydown={e => {
+        onfocus={elt => isoFocus = { id: i, elt }}
+        onkeydown={(elt, e) => {
           if (e.key === 'd') {
-            matrixMakeDeterminantOne(i, e.index)
+            matrixMakeDeterminantOne(i, elt)
           }
         }}
       />
