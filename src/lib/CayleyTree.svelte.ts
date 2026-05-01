@@ -40,8 +40,6 @@ export class CayleyTree {
   depth = 0
   minSize = 0.015
 
-  uniforms: TreeUniforms | undefined = $state()
-
   constructor(width: number, height: number) {
     this.material = new LineMaterial({
       vertexColors: true,
@@ -73,14 +71,14 @@ export class CayleyTree {
       fadeFar: { value: 0 },
       fadeStrength: { value: 0 },
     })
-    $effect(() => {
-      if (!this.uniforms) return
-      for (const [k, v] of Object.entries(this.uniforms)) {
-        this.material.uniforms[k].value = v
-      }
-    })
     this.geometry = new LineSegmentsGeometry()
     this.mesh = new LineSegments2(this.geometry, this.material)
+  }
+
+  setUniforms(u: TreeUniforms) {
+    for (const [k, v] of Object.entries(u)) {
+      this.material.uniforms[k].value = v
+    }
   }
 
   setGeometry(baseGens: CMat[], colors: THREE.Color[][], depth: number, start: CMat = mId()) {

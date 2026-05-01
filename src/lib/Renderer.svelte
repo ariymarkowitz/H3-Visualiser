@@ -61,12 +61,12 @@
 
   $effect(() => {
     if (!scene || !cameraPos) return
-    scene.tree.uniforms = {
+    scene.tree.setUniforms({
       fadeColor: new THREE.Color(getTheme().ui.background).toArray(),
       fadeNear: cameraPos.length() - 1,
       fadeFar: cameraPos.length() + 1,
       fadeStrength: 0.7,
-    }
+    })
     scene.markDirty()
   })
 
@@ -177,7 +177,8 @@
       if (dirty) {
         matShader.uniforms.offset.value = 0.003 * camera.position.length()
         composer.render()
-        if (!animateIso) dirty = false
+        // While animating, the next frame must re-render too — leave dirty set.
+        dirty = !!animateIso
       }
     }
 

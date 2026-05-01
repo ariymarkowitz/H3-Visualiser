@@ -51,12 +51,10 @@ export function crdiv(a: Complex, b: number): Complex {
 // csqrt has two branches: purely-imaginary axis (z.re≤0, z.im=0) avoids
 // cancellation in the general formula.
 export function csqrt(z: Complex): Complex {
-  if (z.im === 0 && z.re <= 0) {
-    return complex(0, Math.sqrt(-z.re))
-  }
+  if (z.im === 0 && z.re <= 0) return complex(0, Math.sqrt(-z.re))
   const r = cnorm(z)
-  const mul = Math.sqrt(r/((z.re+r)**2 + z.im**2))
-  return complex((z.re+r)*mul, z.im*mul)
+  const mul = Math.sqrt(0.5 / (r + z.re))
+  return complex((z.re + r) * mul, z.im * mul)
 }
 
 export function csqr(a: Complex): Complex {

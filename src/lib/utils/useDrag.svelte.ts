@@ -1,19 +1,15 @@
 import { useEventListener } from 'runed'
 
-export type Point = {
+type Point = {
   x: number
   y: number
 }
 
-export type DragState<S> =
+type DragState<S> =
   | { dragging: false }
   | { dragging: true; mouse: Point; data: S }
 
-export type UseDragOptions<S> = {
-  onStart: (e: MouseEvent) => S
-}
-
-export function useDrag<S>(opts: UseDragOptions<S>) {
+export function useDrag<S>(opts: { onStart: (e: MouseEvent) => S }) {
   let state: DragState<S> = $state({ dragging: false })
 
   useEventListener(window, 'mousemove', (e: MouseEvent) => {

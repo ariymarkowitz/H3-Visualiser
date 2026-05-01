@@ -1,16 +1,11 @@
 import { onCleanup } from 'runed'
 
-export type AnimationTimer = {
-  start: () => void
-  stop: () => void
-}
-
 /**
  * A utility function to manage animation timing using requestAnimationFrame.
  * It calls a provided callback with the time delta between frames.
  * It self-cleans up when the effect scope is destroyed.
  */
-export function useAnimationTimer(callback: (deltaTime: number) => void): AnimationTimer {
+export function useAnimationTimer(callback: (deltaTime: number) => void) {
   let lastFrameTime: number | undefined
   let frameRequestId: number | undefined
 

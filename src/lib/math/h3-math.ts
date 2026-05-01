@@ -82,11 +82,12 @@ export function geodesic(a: Quaternion, b: Quaternion, divisions: number, arr: n
   const y = toBallCmplx(end2)
 
   const mid = vadd(x, y)
-  const midn = vnormsq(mid)
+  const midNormSq = vnormsq(mid)
   // Scale the threshold by the magnitude of x and y so the test is invariant
-  // to the positions of the boundary points.
+  // to the positions of the boundary points. NaN occurs when the boundary
+  // points coincide (degenerate geodesic) — treat as a straight line.
   const scale = vnormsq(x) + vnormsq(y)
-  const isStraight = isNaN(midn) || midn < 1e-10 * scale
+  const isStraight = isNaN(midNormSq) || midNormSq < 1e-10 * scale
 
   pushEndpoint(arr, p1)
   if (isStraight) {
@@ -97,7 +98,7 @@ export function geodesic(a: Quaternion, b: Quaternion, divisions: number, arr: n
       pushJoint(arr, current)
     }
   } else {
-    const center = vrmul(mid, (1 + vdistsq(x, y) / midn) / 2)
+    const center = vrmul(mid, (1 + vdistsq(x, y) / midNormSq) / 2)
     const interp = qlerp(vnormalize(vsub(p1, center)), vnormalize(vsub(p2, center)), 1 / (divisions - 1))
     let current = vsub(p1, center)
     for (let i = 1; i < divisions - 1; i++) {

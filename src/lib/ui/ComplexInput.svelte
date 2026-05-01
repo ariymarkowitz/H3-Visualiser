@@ -1,5 +1,7 @@
 <script lang="ts" module>
+  // partialMatch: accepts in-progress edits ("+", "3+", "1.5+2") so onInput doesn't reject mid-typing.
   const partialMatch = /^\s*([+-]?\s*(\d+(\.\d*)?|\.\d+)?)?\s*([+-]?\s*(\d+(\.\d*)?|\.\d+)?i?)?\s*$/
+  // fullMatch: extracts re_sign/re/im_sign/im (or im2 alone) when the input is a complete expression.
   const fullMatch = /^\s*(((?<re_sign>[+-])?\s*(?<re>\d+(\.\d*)?|\.\d+))\s*((?<im_sign>[+-])\s*(?<im>\d+(\.\d*)?|\.\d+)?\s*(?<has_imag>i))?|(?<im_sign2>[+-]?)?\s*(?<im2>\d+(\.\d*)?|\.\d+)?\s*(?<has_imag2>i))\s*$/
 </script>
 

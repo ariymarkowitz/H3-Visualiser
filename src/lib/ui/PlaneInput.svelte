@@ -66,13 +66,13 @@
   const anim = useAnimationTimer(dt => {
     const factor = 1 - Math.exp(-dt / DECAY_MS)
     const dz = csub(target, pos)
-    if (cnormsq(dz) < 1e-4) {
+    if (cnormsq(dz) < 1e-5) {
       pos = target
       anim.stop()
     } else {
       pos = cadd(pos, crmul(dz, factor))
-      ctrl.emit(pos)
     }
+    ctrl.emit(pos)
   })
 
   $effect(() => {
@@ -140,9 +140,10 @@
   })
 
   $effect(() => {
-    if (!freeTarget) return
-    target = snapAxis.value === 'x' ? complex(freeTarget.re, freeTarget.im)
-      : snapAxis.value === 'y' ? complex(freeTarget.re, freeTarget.im)
+    if (!drag.state.dragging || !freeTarget) return
+    const start = drag.state.data.startValue
+    target = snapAxis.value === 'x' && start ? complex(freeTarget.re, start.im)
+      : snapAxis.value === 'y' && start ? complex(start.re, freeTarget.im)
       : freeTarget
   })
 
