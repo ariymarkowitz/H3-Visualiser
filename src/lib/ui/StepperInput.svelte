@@ -13,8 +13,8 @@
     value = $bindable()
   }: StepperInputProps = $props()
 
-  let text: string = $state(value.toString())
-  let acceptedText: string = value.toString()
+  let text: string = $state('')
+  let acceptedText: string = ''
 
   const ctrl = echoGuard<number>({
     read: () => value,

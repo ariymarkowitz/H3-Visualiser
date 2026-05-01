@@ -14,7 +14,7 @@
 
   let { value = $bindable(complex(0)), ...rest }: ComplexInputProps = $props()
   let text: string = $state('')
-  let prevInput: string = $state('')
+  let acceptedText: string = ''
 
   function isValidInput(input: string) {
     if (input === '') return true
@@ -59,16 +59,16 @@
     equal: cEqualOpt,
     sync: v => {
       text = v === undefined ? '' : toString(v)
-      prevInput = text
+      acceptedText = text
     },
   })
 
   function onInput() {
     if (!isValidInput(text)) {
-      text = prevInput
+      text = acceptedText
       return
     }
-    prevInput = text
+    acceptedText = text
     ctrl.emit(parse(text))
   }
 </script>
