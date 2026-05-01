@@ -31,15 +31,13 @@
     matrices[isoFocus.id][isoFocus.elt] = c
   }
 
-  let urlReferenceCopied = $state(false)
-  $effect(() => {
-    void [depth, $state.snapshot(matrices), $state.snapshot(showIso)]
-    urlReferenceCopied = false
-  })
+  let urlReference = $derived(serializeState({ depth, matrices, showIso }))
+  let copiedUrlReference: string | undefined = $state()
+  let urlReferenceCopied = $derived(copiedUrlReference === urlReference)
 
   function copyUrlReference() {
-    navigator.clipboard.writeText(serializeState({ depth, matrices, showIso }))
-      .then(() => urlReferenceCopied = true)
+    const url = urlReference
+    navigator.clipboard.writeText(url).then(() => copiedUrlReference = url)
   }
 
   let animateIdx: number | undefined = $state()
