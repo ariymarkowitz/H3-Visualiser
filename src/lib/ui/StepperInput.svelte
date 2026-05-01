@@ -1,4 +1,6 @@
 <script lang='ts'>
+  import { untrack } from 'svelte'
+
   type StepperInputProps = Partial<{
     min: number
     max: number
@@ -13,12 +15,14 @@
     onchange = _ => {}
   }: StepperInputProps = $props()
 
-  let value: string = $state(init.toString())
-  let numericValue: number = $state(init)
+  let numericValue: number = $state(untrack(() => init))
+  let value: string = $state(untrack(() => init.toString()))
+  let acceptedValue: string = untrack(() => init.toString())
 
   function commit(n: number) {
     numericValue = n
     value = n.toString()
+    acceptedValue = value
     onchange(n)
   }
 
@@ -35,12 +39,16 @@
   }
 
   function onInput() {
-    if (value === '') return
-    const n = parseInput(value)
-    if (n === null) {
-      value = numericValue.toString()
+    if (value === '') {
+      acceptedValue = value
       return
     }
+    const n = parseInput(value)
+    if (n === null) {
+      value = acceptedValue
+      return
+    }
+    acceptedValue = value
     if (n >= min) commit(n)
   }
 </script>
