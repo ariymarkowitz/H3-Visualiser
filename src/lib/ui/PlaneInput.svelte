@@ -36,8 +36,9 @@
     write: v => { if (v !== undefined) onchange?.(v) },
     equal: cEqualOpt,
     sync: v => {
-      pos = v ?? complex(0)
-      target = v ?? complex(0)
+      const c = v ?? complex(0)
+      pos = c
+      target = c
     },
   })
 
@@ -85,7 +86,7 @@
 
   function draw(canvas: HTMLCanvasElement, width: number, height: number, pos: Complex, theme: Theme) {
     const ctx = canvas.getContext('2d')
-    if (!canvas || !ctx) return
+    if (!ctx) return
 
     ctx.clearRect(0, 0, width, height)
 
@@ -142,8 +143,8 @@
   $effect(() => {
     if (!drag.state.dragging || !freeTarget) return
     const start = drag.state.data.startValue
-    target = snapAxis.value === 'x' && start ? complex(freeTarget.re, start.im)
-      : snapAxis.value === 'y' && start ? complex(start.re, freeTarget.im)
+    target = snapAxis.value === 'x' ? complex(freeTarget.re, start.im)
+      : snapAxis.value === 'y' ? complex(start.re, freeTarget.im)
       : freeTarget
   })
 

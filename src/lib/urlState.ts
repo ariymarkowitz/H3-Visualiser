@@ -2,6 +2,10 @@ import { mId, type CMat } from './math/math'
 
 const KEYS = [{ m: 'a', show: 'showa' }, { m: 'b', show: 'showb' }] as const
 
+export const MIN_DEPTH = 1
+export const MAX_DEPTH = 20
+export const DEFAULT_DEPTH = 10
+
 export interface UrlState {
   depth: number
   matrices: [CMat, CMat]
@@ -28,7 +32,7 @@ export function parseInitialState(): UrlState {
     }
   }
   return {
-    depth: Number.isInteger(d) && d >= 1 ? d : 10,
+    depth: Number.isInteger(d) && d >= MIN_DEPTH && d <= MAX_DEPTH ? d : DEFAULT_DEPTH,
     matrices,
     showIso,
   }

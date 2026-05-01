@@ -6,7 +6,7 @@
 <script lang="ts">
   type MatrixInputProps = {
     value: CMat
-    onfocus?: (index: number | undefined) => void
+    onfocus?: (index: number) => void
     onkeydown?: (e: { index: number, key: string }) => void
   }
   let { value = $bindable(), onfocus, onkeydown }: MatrixInputProps = $props()

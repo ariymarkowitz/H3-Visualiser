@@ -36,6 +36,8 @@ const cssVars: Record<string, (t: Theme) => string> = {
   '--ui-border': t => t.ui.border,
   '--ui-focusBorder': t => t.ui.focusBorder,
   '--ui-thickBorder': t => t.ui.thickBorder,
+  '--isometry-1': t => t.canvas.isometryColors[0][0],
+  '--isometry-2': t => t.canvas.isometryColors[1][0],
 }
 
 export function setThemeByName(name: string) {
@@ -45,7 +47,4 @@ export function setThemeByName(name: string) {
   for (const [k, get] of Object.entries(cssVars)) {
     style.setProperty(k, get(theme))
   }
-  theme.canvas.isometryColors.forEach((pair, i) => {
-    style.setProperty(`--isometry-${i + 1}`, pair[0])
-  })
 }

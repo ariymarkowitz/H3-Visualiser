@@ -5,7 +5,7 @@
   import StepperInput from './lib/ui/StepperInput.svelte'
   import { getTheme, setThemeByName, themes } from './style/themes/themes.svelte'
   import Renderer from './lib/Renderer.svelte'
-  import { parseInitialState, serializeState } from './lib/urlState'
+  import { MAX_DEPTH, MIN_DEPTH, parseInitialState, serializeState } from './lib/urlState'
 
   let themeInput: string = $state(themes[0].name)
   $effect(() => setThemeByName(themeInput))
@@ -59,14 +59,14 @@
   </div>
   <div class="sidebar">
     <div class="sidebar-row">
-      Depth<StepperInput bind:value={depth} min={1} max={20} />
+      Depth<StepperInput bind:value={depth} min={MIN_DEPTH} max={MAX_DEPTH} />
     </div>
     {#each [0, 1] as i}
       <div class="sidebar-row">
       <input type="checkbox" name="isometry{i+1}" bind:checked={showIso[i]} />Isometry {i + 1}
       <MatrixInput
         bind:value={matrices[i]}
-        onfocus={index => isoFocus = index === undefined ? undefined : { id: i, elt: index }}
+        onfocus={index => isoFocus = { id: i, elt: index }}
         onkeydown={e => {
           if (e.key === 'd') {
             matrixMakeDeterminantOne(i, e.index)
