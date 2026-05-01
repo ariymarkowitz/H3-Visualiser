@@ -70,7 +70,7 @@ export class CayleyTree {
         last
     }
     Object.assign(this.material.uniforms, {
-      fadeColor: { value: undefined },
+      fadeColor: { value: [0, 0, 0] },
       fadeNear: { value: 0 },
       fadeFar: { value: 0 },
       fadeStrength: { value: 0 },
