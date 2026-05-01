@@ -7,19 +7,13 @@
   import type { HTMLInputAttributes } from 'svelte/elements'
   import { cIsZero, cEqualOpt, complex, type Complex } from '../math/math'
   import { echoGuard } from '../utils/echoGuard.svelte'
+  import { validator } from '../utils/validator.svelte'
 
   type ComplexInputProps = Omit<HTMLInputAttributes, 'value' | 'type'> & {
     value?: Complex
   }
 
   let { value = $bindable(complex(0)), ...rest }: ComplexInputProps = $props()
-  let text: string = $state('')
-  let acceptedText: string = ''
-
-  function isValidInput(input: string) {
-    if (input === '') return true
-    return partialMatch.test(input)
-  }
 
   // Apply optional sign to optional magnitude; missing magnitude means 1
   // (so e.g. "+i" parses as +1*i).
@@ -53,24 +47,20 @@
     return `${formatShort(z.re)}${z.im >= 0 ? '+' : '-'}${formatShort(Math.abs(z.im))}i`
   }
 
+  const input = validator<Complex>({
+    parse: (s, { reject, emit }) => {
+      if (s !== '' && !partialMatch.test(s)) return reject
+      return emit(parse(s))
+    },
+    onEmit: c => ctrl.emit(c),
+  })
+
   const ctrl = echoGuard({
     read: () => value,
     write: v => { value = v },
     equal: cEqualOpt,
-    sync: v => {
-      text = v === undefined ? '' : toString(v)
-      acceptedText = text
-    },
+    sync: v => input.set(v === undefined ? '' : toString(v)),
   })
-
-  function onInput() {
-    if (!isValidInput(text)) {
-      text = acceptedText
-      return
-    }
-    acceptedText = text
-    ctrl.emit(parse(text))
-  }
 </script>
 
-<input type='text' bind:value={text} oninput={onInput} {...rest} />
+<input type='text' bind:value={input.text} oninput={input.onInput} {...rest} />

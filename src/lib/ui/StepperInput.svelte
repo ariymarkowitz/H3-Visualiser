@@ -1,5 +1,6 @@
 <script lang='ts'>
   import { echoGuard } from '../utils/echoGuard.svelte'
+  import { validator } from '../utils/validator.svelte'
 
   type StepperInputProps = {
     min?: number
@@ -13,48 +14,32 @@
     value = $bindable()
   }: StepperInputProps = $props()
 
-  let text: string = $state('')
-  let acceptedText: string = ''
+  const input = validator<number>({
+    parse: (s, { accept, reject, emit }) => {
+      if (s === '') return accept
+      if (!/^(0|[1-9]\d*)$/.test(s)) return reject
+      const n = Number(s)
+      if (n > max) return reject
+      return n >= min ? emit(n) : accept
+    },
+    onEmit: n => ctrl.emit(n),
+  })
 
   const ctrl = echoGuard<number>({
     read: () => value,
     write: v => { value = v },
     equal: (a, b) => a === b,
-    sync: v => {
-      text = v.toString()
-      acceptedText = text
-    },
+    sync: v => input.set(v.toString()),
   })
 
   function step(direction: 1 | -1) {
     const n = value + direction
     if (n >= min && n <= max) ctrl.emit(n)
   }
-
-  // Allow an initial substring of a valid number within bounds.
-  function parseInput(input: string): number | null {
-    if (!/^(0|[1-9]\d*)$/.test(input)) return null
-    const n = Number(input)
-    return n <= max ? n : null
-  }
-
-  function onInput() {
-    if (text === '') {
-      acceptedText = text
-      return
-    }
-    const n = parseInput(text)
-    if (n === null) {
-      text = acceptedText
-      return
-    }
-    acceptedText = text
-    if (n >= min) ctrl.emit(n)
-  }
 </script>
 
 <div class='number-input'>
-  <input type='text' bind:value={text} oninput={onInput}/>
+  <input type='text' bind:value={input.text} oninput={input.onInput}/>
   <div class='number-input-buttons'>
     <button type="button" aria-label="Increment" class='number-input-up' onclick={() => step(1)}><i></i></button>
     <button type="button" aria-label="Decrement" class='number-input-down' onclick={() => step(-1)}><i></i></button>
