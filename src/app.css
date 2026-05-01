@@ -1,7 +1,7 @@
 
 body {
-  color: var(--textColor);
-  background-color: var(--bgColor);
+  color: var(--ui-textColor);
+  background-color: var(--ui-background);
   font: 15px sans-serif;
   margin: 0;
 }
@@ -9,14 +9,14 @@ hr {
   border: none;
   width: 80%;
   height: 1px;
-  background-color: var(--borderColor);
+  background-color: var(--ui-border);
 }
 input[type='text'], select, button {
   font: inherit;
   background-color: inherit;
   color: inherit;
   width: 100%;
-  border: 1px solid var(--borderColor);
+  border: 1px solid var(--ui-border);
   padding: 0.7em;
   box-sizing: border-box;
   border-radius: 4px;
@@ -28,11 +28,11 @@ input[type='text'], select, button {
 
 input[type='text']:focus, select:focus {
   outline: none;
-  border-color: var(--focusBorderColor);
+  border-color: var(--ui-focusBorder);
 }
 
 option {
-  background-color: var(--bgColor);
+  background-color: var(--ui-background);
 }
 
 input[type='checkbox'] {
@@ -43,7 +43,7 @@ input[type='checkbox'] {
   margin: 0;
   width: 18px;
   height: 18px;
-  border: 2px solid var(--thickBorderColor);
+  border: 2px solid var(--ui-thickBorder);
   background-color: none;
 }
 

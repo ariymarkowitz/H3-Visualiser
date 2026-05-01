@@ -43,6 +43,10 @@
 
   // World coordinates span [-RANGE, RANGE] in both axes.
   const RANGE = 3
+  // Exponential decay constant for pos -> target interpolation (ms).
+  const DECAY_MS = 90
+  // Distance the cursor can stray from the locked axis before unlock.
+  const SNAP_LOCK_RANGE = 0.3
 
   function worldToScreen(c: Complex, width: number, height: number) {
     return {
@@ -60,7 +64,7 @@
 
   // Animation loop to smoothly interpolate pos towards target
   const anim = useAnimationTimer(dt => {
-    const factor = 1 - Math.exp(-dt / 90) // 90ms decay
+    const factor = 1 - Math.exp(-dt / DECAY_MS)
     const dz = csub(target, pos)
     if (cnormsq(dz) < 1e-4) {
       pos = target
@@ -131,7 +135,7 @@
     const start = drag.state.data.startValue
     const dx = Math.abs(freeTarget.re - start.re)
     const dy = Math.abs(freeTarget.im - start.im)
-    const stillLocked = (prev === 'x' && dy <= 0.3) || (prev === 'y' && dx <= 0.3)
+    const stillLocked = (prev === 'x' && dy <= SNAP_LOCK_RANGE) || (prev === 'y' && dx <= SNAP_LOCK_RANGE)
     return stillLocked ? prev : (dx > dy ? 'x' : 'y')
   })
 
@@ -159,7 +163,7 @@
   .plane-input {
     width: 270px;
     height: 270px;
-    border: 2px solid var(--thickBorderColor);
+    border: 2px solid var(--ui-thickBorder);
   }
   .plane-input-canvas {
     width: 100%;

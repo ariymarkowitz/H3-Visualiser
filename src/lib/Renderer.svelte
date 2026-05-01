@@ -4,9 +4,23 @@
     height: number
     depth: number
     gens: CMat[]
-    colors: THREE.Color[]
+    rawColors: string[]
     animateIso?: CMat
   }
+
+  const OUTLINE_VERTEX_SHADER = `
+    uniform float offset;
+    void main() {
+      vec4 pos = modelViewMatrix * vec4( position + normal * offset, 1.0 );
+      gl_Position = projectionMatrix * pos;
+    }
+  `
+  const OUTLINE_FRAGMENT_SHADER = `
+    uniform vec4 color;
+    void main() {
+      gl_FragColor = color;
+    }
+  `
 </script>
 
 <script lang="ts">
@@ -20,70 +34,58 @@
   import { FXAAShader } from 'three/addons/shaders/FXAAShader.js'
   import { CayleyTree } from './CayleyTree.svelte'
   import { mpow, type CMat } from './math/math'
-  import { createMemo } from './utils/memoize.svelte'
   import { getTheme } from '../style/themes/themes.svelte'
 
-  let { width, height, depth, gens, colors, animateIso }: RendererProps = $props()
+  let { width, height, depth, gens, rawColors, animateIso }: RendererProps = $props()
 
-  $effect(() => {
-    if (!animateIso) updateTree(gens, colors, depth)
-  })
+  let colors = $derived(rawColors.map(c => new THREE.Color(c)))
 
   let dpr = window.devicePixelRatio
-
   let canvas: HTMLCanvasElement
-  let id: number
 
-  let cameraPos = createMemo<THREE.Vector3 | undefined>(undefined, (a, b) => a === b || (a !== undefined && b !== undefined && a.equals(b)))
-  let updateTree: (gens: CMat[], colors: THREE.Color[], depth: number, iso?: CMat) => void = $state(() => {})
-
-  let tree: CayleyTree | undefined = $state()
-
-  // Lifted from onMount — these read reactive state (getTheme, cameraPos, tree)
-  // that changes after mount. The Three.js objects they reference are stored in
-  // $state variables below so these effects can observe them.
-  let renderer: THREE.WebGLRenderer | undefined = $state()
-  let axis: THREE.AxesHelper | undefined = $state()
-  let matShader: THREE.ShaderMaterial | undefined = $state()
-  let setDirty: (() => void) | undefined = $state()
+  // Reactive cells observed by effects below; populated from onMount.
+  type Scene = {
+    renderer: THREE.WebGLRenderer
+    axis: THREE.AxesHelper
+    matShader: THREE.ShaderMaterial
+    tree: CayleyTree
+    markDirty: () => void
+    updateTree: (gens: CMat[], colors: THREE.Color[], depth: number, iso?: CMat) => void
+  }
+  let scene: Scene | undefined = $state()
+  let cameraPos: THREE.Vector3 | undefined = $state.raw()
 
   $effect(() => {
-    const camPos = cameraPos.get()
-    if (!tree || !camPos) return
-    tree.uniforms = {
+    if (scene && !animateIso) scene.updateTree(gens, colors, depth)
+  })
+
+  $effect(() => {
+    if (!scene || !cameraPos) return
+    scene.tree.uniforms = {
       fadeColor: new THREE.Color(getTheme().ui.background).toArray(),
-      fadeNear: camPos.length() - 1,
-      fadeFar: camPos.length() + 1,
-      fadeStrength: 0.7
+      fadeNear: cameraPos.length() - 1,
+      fadeFar: cameraPos.length() + 1,
+      fadeStrength: 0.7,
     }
+    scene.markDirty()
   })
 
   $effect(() => {
-    if (!setDirty) return
+    if (!scene) return
     const theme = getTheme()
-    if (renderer) renderer.setClearColor(theme.ui.background)
-    if (axis) {
-      const [x, y, z] = theme.canvas.axisColors.map((c) => new THREE.Color(c))
-      axis.setColors(x, y, z)
-    }
-    if (matShader) {
-      const c = new THREE.Color(theme.canvas.foreground)
-      matShader.uniforms.color.value = [c.r, c.g, c.b, 1]
-    }
-    setDirty()
-  })
-
-  $effect(() => {
-    if (!tree || !setDirty) return
-    if (tree.uniforms) setDirty()
+    scene.renderer.setClearColor(theme.ui.background)
+    const [x, y, z] = theme.canvas.axisColors.map(c => new THREE.Color(c))
+    scene.axis.setColors(x, y, z)
+    const c = new THREE.Color(theme.canvas.foreground)
+    scene.matShader.uniforms.color.value = [c.r, c.g, c.b, 1]
+    scene.markDirty()
   })
 
   onMount(() => {
     let dirty = true
     const markDirty = () => (dirty = true)
-    setDirty = markDirty
 
-    renderer = new THREE.WebGLRenderer({ antialias: true, canvas })
+    const renderer = new THREE.WebGLRenderer({ antialias: true, canvas })
     renderer.setSize(width, height, false)
     renderer.setPixelRatio(dpr)
     renderer.setClearColor(0xffffff)
@@ -102,52 +104,28 @@
     controls.noPan = true
     controls.rotateSpeed = 2
 
-    axis = new THREE.AxesHelper(1)
-    axis.setColors(new THREE.Color(0xff9999), new THREE.Color(0x66ff66), new THREE.Color(0x9999ff))
+    const axis = new THREE.AxesHelper(1)
     _scene.add(axis)
 
-    // # shaded model
     const sphereGeo = new THREE.SphereGeometry(1, 128, 64)
     const sphereMat = new THREE.MeshBasicMaterial({ color: 0x000000 })
     const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat)
     maskScene.add(sphereMesh)
     maskScene2.add(sphereMesh.clone())
 
-    // shader
-    const outlineUniforms = {
-      offset: {
-        value: 0.01
+    const matShader = new THREE.ShaderMaterial({
+      uniforms: {
+        offset: { value: 0.01 },
+        color: { value: new THREE.Vector4(0, 0, 0, 1) },
       },
-      color: {
-        value: new THREE.Vector4(0, 0, 0, 1)
-      }
-    }
-
-    matShader = new THREE.ShaderMaterial({
-      uniforms: outlineUniforms,
-      vertexShader: `
-        uniform float offset;
-        void main() {
-          vec4 pos = modelViewMatrix * vec4( position + normal * offset, 1.0 );
-          gl_Position = projectionMatrix * pos;
-        }
-      `,
-      fragmentShader: `
-        uniform vec4 color;
-        void main() {
-          gl_FragColor = color;
-        }
-      `
+      vertexShader: OUTLINE_VERTEX_SHADER,
+      fragmentShader: OUTLINE_FRAGMENT_SHADER,
     })
+    outScene.add(new THREE.Mesh(sphereGeo, matShader))
 
-    const outlineMesh = new THREE.Mesh(sphereGeo, matShader)
-    outScene.add(outlineMesh)
-
-    // postprocessing
     const renderPass = new RenderPass(_scene, camera)
     const outline = new RenderPass(outScene, camera)
     outline.clear = false
-
     const mask = new MaskPass(maskScene, camera)
     const mask2 = new MaskPass(maskScene2, camera)
     mask.inverse = true
@@ -156,13 +134,12 @@
     const fxaaPass = new ShaderPass(FXAAShader)
     fxaaPass.renderToScreen = true
     const pixelRatio = renderer.getPixelRatio()
-    fxaaPass.material.uniforms[ 'resolution' ].value.x = 1 / ( width * pixelRatio )
-    fxaaPass.material.uniforms[ 'resolution' ].value.y = 1 / ( height * pixelRatio )
+    fxaaPass.material.uniforms['resolution'].value.x = 1 / (width * pixelRatio)
+    fxaaPass.material.uniforms['resolution'].value.y = 1 / (height * pixelRatio)
 
     const composer = new EffectComposer(renderer)
     composer.renderTarget1.stencilBuffer = true
     composer.renderTarget2.stencilBuffer = true
-
     composer.addPass(renderPass)
     composer.addPass(mask2)
     composer.addPass(mask)
@@ -170,27 +147,28 @@
     composer.addPass(clearMask)
     composer.addPass(fxaaPass)
 
-    id = requestAnimationFrame(animate)
-    controls.addEventListener('change', markDirty)
-
-    tree = new CayleyTree(width, height)
+    const tree = new CayleyTree(width, height)
     _scene.add(tree.mesh)
-    updateTree = (gens, colors, depth, iso) => {
-      if (!tree) return
+
+    const updateTree: Scene['updateTree'] = (gens, colors, depth, iso) => {
       tree.setGeometry(gens, colors, depth, iso)
       markDirty()
     }
 
+    controls.addEventListener('change', markDirty)
+
     let t = 0
     let lastTime: number | undefined
+    let id = requestAnimationFrame(animate)
     function animate(time: number) {
       id = requestAnimationFrame(animate)
       controls.update()
-      const camPos = camera.position.clone()
-      cameraPos.set(camPos)
+
+      const newCamPos = camera.position.clone()
+      if (!cameraPos || !newCamPos.equals(cameraPos)) cameraPos = newCamPos
 
       if (animateIso) {
-        t = lastTime === undefined ? 0 : (t + (time - lastTime)/4000) % 1
+        t = lastTime === undefined ? 0 : (t + (time - lastTime) / 4000) % 1
         lastTime = time
         updateTree(gens, colors, depth, mpow(animateIso, t))
         dirty = true
@@ -199,21 +177,23 @@
       }
 
       if (dirty) {
-        matShader!.uniforms.offset.value = 0.003 * camPos.length()
+        matShader.uniforms.offset.value = 0.003 * newCamPos.length()
         composer.render()
         if (!animateIso) dirty = false
       }
     }
 
+    scene = { renderer, axis, matShader, tree, markDirty, updateTree }
+
     return () => {
-      if (id) cancelAnimationFrame(id)
+      cancelAnimationFrame(id)
       controls.removeEventListener('change', markDirty)
-      tree?.dispose()
+      tree.dispose()
       sphereGeo.dispose()
       sphereMat.dispose()
-      matShader?.dispose()
+      matShader.dispose()
       for (const p of composer.passes) p.dispose()
-      renderer?.dispose()
+      renderer.dispose()
     }
   })
 </script>

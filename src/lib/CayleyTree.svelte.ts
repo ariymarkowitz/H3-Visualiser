@@ -28,16 +28,18 @@ export interface TreeUniforms {
   fadeStrength: number
 }
 
+interface Generator {
+  matrix: CMat
+  // Pre-extracted [r, g, b] so _tree never allocates a THREE.Color per step.
+  color: [number, number, number]
+}
+
 export class CayleyTree {
   mesh: LineSegments2
   geometry: LineSegmentsGeometry
   material: LineMaterial
-  generators: CMat[] = []
+  generators: Generator[] = []
   depth = 0
-
-  // Pre-extracted [r,g,b] triples per generator, rebuilt in setGeometry so
-  // _tree never allocates a THREE.Color per recursion step.
-  colorArrays: [number, number, number][] = []
   minSize = 0.015
 
   uniforms: TreeUniforms | undefined = $state()
@@ -85,10 +87,12 @@ export class CayleyTree {
 
   setGeometry(baseGens: CMat[], colors: THREE.Color[], depth: number, start: CMat = mId()) {
     // Each generator g is paired with g^-1 so _tree can step in either direction.
-    this.generators = baseGens.flatMap((g) => [g, minv(g)])
+    // `colors` is parallel to the expanded generator list — index 2k is g, 2k+1 is g^-1.
+    this.generators = baseGens.flatMap((g, k): Generator[] => [
+      { matrix: g, color: [colors[2*k].r, colors[2*k].g, colors[2*k].b] },
+      { matrix: minv(g), color: [colors[2*k+1].r, colors[2*k+1].g, colors[2*k+1].b] },
+    ])
     this.depth = depth
-    // Pre-extract RGB arrays once per generator so _tree doesn't allocate per step.
-    this.colorArrays = colors.map((c) => [c.r, c.g, c.b])
 
     const data: TreeData = {
       vertexColors: [],
@@ -120,16 +124,18 @@ export class CayleyTree {
     if (depth > 0 && mIsId(mat, 1e-4)) return
 
     for (let gi = 0; gi < this.generators.length; gi++) {
+      // Skip g^-1 immediately after stepping along g.
       if ((gi ^ 1) === genN) continue
 
-      const newMat = mmul(mat, this.generators[gi])
+      const gen = this.generators[gi]
+      const newMat = mmul(mat, gen.matrix)
       const newQuat = mobius(newMat)
       const newVertex = toBall(newQuat)
 
       const childSize = vdist(p, newVertex)
       const subdivisions = Math.floor(Math.min(Math.max(childSize * 100, 2), 10))
 
-      const [r, g, b] = this.colorArrays[gi]
+      const [r, g, b] = gen.color
       state.vertexColors.push(r, g, b)
       state.vertices.push(newVertex.x, newVertex.y, newVertex.z)
       for (let li = 0; li < subdivisions * 2 - 2; li++) {

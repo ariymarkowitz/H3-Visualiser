@@ -14,37 +14,34 @@
   }: StepperInputProps = $props()
 
   let value: string = $state(init.toString())
-  let prevInput: string = $state(init.toString())
   let numericValue: number = $state(init)
 
-  function step(direction: 1 | -1) {
-    const n = numericValue + direction
-    if (n < min || n > max) return
+  function commit(n: number) {
     numericValue = n
     value = n.toString()
     onchange(n)
   }
 
-  function onInput() {
-    if (!isValidInput(value)) {
-      value = prevInput
-      return
-    }
-    prevInput = value
-    if (value !== '') {
-      const n = Number(value)
-      if (n >= min && n <= max) {
-        numericValue = n
-        onchange(n)
-      }
-    }
+  function step(direction: 1 | -1) {
+    const n = numericValue + direction
+    if (n >= min && n <= max) commit(n)
   }
 
-  function isValidInput(input: string) {
-    if (input === '') return true
-    if (!/^(0|[1-9]\d*)$/.test(input)) return false
+  // Allow an initial substring of a valid number within bounds.
+  function parseInput(input: string): number | null {
+    if (!/^(0|[1-9]\d*)$/.test(input)) return null
     const n = Number(input)
-    return n <= max
+    return n <= max ? n : null
+  }
+
+  function onInput() {
+    if (value === '') return
+    const n = parseInput(value)
+    if (n === null) {
+      value = numericValue.toString()
+      return
+    }
+    if (n >= min) commit(n)
   }
 </script>
 
@@ -75,7 +72,7 @@
 
   .number-input-up {
     flex: 1;
-    border: 1px solid var(--borderColor);
+    border: 1px solid var(--ui-border);
     border-left: none;
 
     border-radius: 0 4px 0 0;
@@ -84,19 +81,19 @@
 
     i {
       border-width: 0 0.3em 0.3em;
-      border-color: transparent transparent var(--borderColor);
+      border-color: transparent transparent var(--ui-border);
       border-style: solid;
       margin: -0.2em 0 0 -0.3em;
     }
 
     &:hover i {
-      border-color: transparent transparent var(--focusBorderColor);
+      border-color: transparent transparent var(--ui-focusBorder);
     }
   }
 
   .number-input-down {
     flex: 1;
-    border: 1px solid var(--borderColor);
+    border: 1px solid var(--ui-border);
     border-left: none;
     border-top: none;
 
@@ -106,13 +103,13 @@
 
     i {
       border-width: 0.3em 0.3em 0;
-      border-color: var(--borderColor) transparent transparent;
+      border-color: var(--ui-border) transparent transparent;
       border-style: solid;
       margin: -0.1em 0 0 -0.3em;
     }
 
     &:hover i {
-      border-color: var(--focusBorderColor) transparent transparent;
+      border-color: var(--ui-focusBorder) transparent transparent;
     }
   }
 

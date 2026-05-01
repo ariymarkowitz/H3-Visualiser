@@ -37,16 +37,16 @@ export function cneg(a: Complex): Complex {
   return complex(-a.re, -a.im)
 }
 
-export function cnorm(a: Complex): number {
-  return Math.sqrt(a.re * a.re + a.im * a.im)
+export function cdot(a: Complex, b: Complex): number {
+  return a.re * b.re + a.im * b.im
 }
 
 export function cnormsq(a: Complex): number {
-  return a.re * a.re + a.im * a.im
+  return cdot(a, a)
 }
 
-export function cdot(a: Complex, b: Complex): number {
-  return a.re * b.re + a.im * b.im
+export function cnorm(a: Complex): number {
+  return Math.sqrt(cnormsq(a))
 }
 
 export function cdiv(a: Complex, b: Complex): Complex {

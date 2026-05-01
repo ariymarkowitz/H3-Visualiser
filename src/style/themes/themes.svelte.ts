@@ -27,20 +27,22 @@ export function getTheme() {
   return _theme
 }
 
-export function setThemeByName(name: string) {
-  const theme = themes.find((t) => t.name === name) ?? themes[0]
-  _theme = theme
+// CSS variable name → value extractor. Only fields read from CSS appear here;
+// fields read directly via getTheme() (canvas colors, githubImage) do not.
+const cssVars: Record<string, (t: Theme) => string> = {
+  '--ui-background': t => t.ui.background,
+  '--ui-textColor': t => t.ui.textColor,
+  '--ui-border': t => t.ui.border,
+  '--ui-focusBorder': t => t.ui.focusBorder,
+  '--ui-thickBorder': t => t.ui.thickBorder,
+  '--isometry-1': t => t.canvas.isometryColors[0][0],
+  '--isometry-2': t => t.canvas.isometryColors[1][0],
+}
 
-  const vars: Record<string, string> = {
-    '--bgColor': theme.ui.background,
-    '--textColor': theme.ui.textColor,
-    '--borderColor': theme.ui.border,
-    '--focusBorderColor': theme.ui.focusBorder,
-    '--thickBorderColor': theme.ui.thickBorder,
-    '--isometry1Color': theme.canvas.isometryColors[0][0],
-    '--isometry2Color': theme.canvas.isometryColors[1][0],
-  }
-  for (const [k, v] of Object.entries(vars)) {
-    document.documentElement.style.setProperty(k, v)
+export function setThemeByName(name: string) {
+  const theme = themes.find(t => t.name === name) ?? themes[0]
+  _theme = theme
+  for (const [k, get] of Object.entries(cssVars)) {
+    document.documentElement.style.setProperty(k, get(theme))
   }
 }

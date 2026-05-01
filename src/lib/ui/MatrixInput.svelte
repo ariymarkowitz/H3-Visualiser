@@ -44,20 +44,20 @@
     input {
         background: none;
         color: inherit;
-        border: 1px dashed var(--borderColor);
+        border: 1px dashed var(--ui-border);
         padding: 2px;
         text-align: center;
       }
 
     input:focus {
-      border-color: var(--focusBorderColor);
+      border-color: var(--ui-focusBorder);
     }
   }
 
   .matrix-bracket {
     width: 6px;
     height: 95px;
-    border: 2px solid var(--thickBorderColor);
+    border: 2px solid var(--ui-thickBorder);
     border-radius: 1px;
     box-sizing: border-box;
 

@@ -1,54 +1,23 @@
 <script lang="ts">
-  import { Color } from 'three'
-  import { makedet1, mId, mIsSingular, type CMat, type Complex } from './lib/math/math'
+  import { makedet1, mIsSingular, type CMat, type Complex } from './lib/math/math'
   import MatrixInput from './lib/ui/MatrixInput.svelte'
   import PlaneInput from './lib/ui/PlaneInput.svelte'
   import StepperInput from './lib/ui/StepperInput.svelte'
   import { getTheme, setThemeByName, themes } from './style/themes/themes.svelte'
   import Renderer from './lib/Renderer.svelte'
-  import { watch } from 'runed';
+  import { parseInitialState, serializeState } from './lib/urlState'
 
   let themeInput: string = $state(themes[0].name)
   $effect(() => setThemeByName(themeInput))
-
-  const matrixKey = (i: number) => i === 0 ? 'a' : 'b'
-  const showKey = (i: number) => i === 0 ? 'showa' : 'showb'
-
-  function parseMatrixParam(raw: string | null): CMat | undefined {
-    if (!raw) return undefined
-    const list = raw.split(' ').map(Number)
-    if (list.length !== 8 || !list.every(Number.isFinite)) return undefined
-    return Array.from({length: 4}, (_, i) => ({re: list[2*i], im: list[2*i+1]})) as CMat
-  }
-
-  function parseInitialState() {
-    const params = new URLSearchParams(window.location.search)
-    const d = Number(params.get('d'))
-    const matrices: [CMat, CMat] = [mId(), mId()]
-    const showIso = [false, false]
-    for (let i = 0; i < 2; i++) {
-      const m = parseMatrixParam(params.get(matrixKey(i)))
-      if (m) {
-        matrices[i] = m
-        showIso[i] = params.get(showKey(i)) === '1'
-      }
-    }
-    return {
-      depth: Number.isInteger(d) && d >= 1 ? d : 10,
-      matrices,
-      showIso,
-    }
-  }
 
   const initial = parseInitialState()
   let depth: number = $state(initial.depth)
   let matrices: [CMat, CMat] = $state(initial.matrices)
   let showIso = $state(initial.showIso)
 
-  let rawColors = $derived(getTheme().canvas.isometryColors)
   let activeIdx = $derived([0, 1].filter(i => showIso[i] && !mIsSingular(matrices[i])))
   let gens = $derived(activeIdx.map(i => matrices[i]))
-  let colors = $derived(activeIdx.flatMap(i => rawColors[i].map(c => new Color(c))))
+  let rawColors = $derived(activeIdx.flatMap(i => getTheme().canvas.isometryColors[i]))
 
   let isoFocus: { id: number; elt: number } | undefined = $state()
 
@@ -63,22 +32,13 @@
   }
 
   let urlReferenceCopied = $state(false)
-  watch(() => $state.snapshot([depth, matrices, showIso]), () => {
+  $effect(() => {
+    void [depth, $state.snapshot(matrices), $state.snapshot(showIso)]
     urlReferenceCopied = false
   })
 
   function copyUrlReference() {
-    let params = new URLSearchParams()
-    params.append('d', depth.toString())
-
-    for (let i = 0; i < 2; i++) {
-      if (!showIso[i]) continue
-      params.append(matrixKey(i), matrices[i].flatMap(z => [z.re, z.im]).join(' '))
-      params.append(showKey(i), '1')
-    }
-
-    const url = new URL(window.location.href);
-    navigator.clipboard.writeText(`${url.origin}${url.pathname}?${params}`)
+    navigator.clipboard.writeText(serializeState({ depth, matrices, showIso }))
       .then(() => urlReferenceCopied = true)
   }
 
@@ -97,7 +57,7 @@
 
 <main>
   <div class="render-container">
-    <Renderer animateIso={animateIso} width={800} height={800} {gens} {colors} {depth} />
+    <Renderer animateIso={animateIso} width={800} height={800} {gens} {rawColors} {depth} />
   </div>
   <div class="sidebar">
     <div class="sidebar-row">
@@ -151,11 +111,11 @@
 
 <style>
 input[type='checkbox'][name='isometry1']:checked::before {
-  background-color: var(--isometry1Color);
+  background-color: var(--isometry-1);
 }
 
 input[type='checkbox'][name='isometry2']:checked::before {
-  background-color: var(--isometry2Color);
+  background-color: var(--isometry-2);
 }
 
 main {
