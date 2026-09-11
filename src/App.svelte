@@ -6,6 +6,7 @@
   import { getTheme, setThemeByName, themes } from './style/themes/themes.svelte'
   import Renderer from './lib/Renderer.svelte'
   import { MAX_DEPTH, MIN_DEPTH, parseInitialState, serializeState } from './lib/urlState'
+  import { examples, matchesExample } from './lib/examples'
 
   let themeInput: string = $state(themes[0].name)
   $effect(() => setThemeByName(themeInput))
@@ -47,6 +48,16 @@
     animateIdx = animateIdx === i ? undefined : i
   }
 
+  let exampleName = $derived(examples.find(ex => matchesExample(ex, { matrices, showIso }))?.name ?? '')
+
+  function loadExample(name: string) {
+    const ex = examples.find(ex => ex.name === name)
+    if (!ex) return
+    depth = ex.depth
+    matrices = structuredClone(ex.matrices)
+    showIso = [...ex.showIso]
+  }
+
   function matrixMakeDeterminantOne(id: number, elt: number) {
     const result = makedet1(matrices[id], elt)
     if (result) matrices[id][elt] = result
@@ -79,6 +90,14 @@
       <div class="row-center">
         <PlaneInput value={focusedComplex} onchange={setFocusedComplex} />
       </div>
+    </div>
+    <div class="sidebar-row">
+      Example <select value={exampleName} onchange={e => loadExample(e.currentTarget.value)}>
+        <option value="" disabled>Choose an example</option>
+        {#each examples as example}
+          <option>{example.name}</option>
+        {/each}
+      </select>
     </div>
     <div class="sidebar-row">
       <button onclick={copyUrlReference} disabled={urlReferenceCopied}>

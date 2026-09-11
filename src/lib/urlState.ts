@@ -23,7 +23,9 @@ export function parseInitialState(): UrlState {
   const params = new URLSearchParams(window.location.search)
   const d = Number(params.get('d'))
   const matrices: [CMat, CMat] = [mId(), mId()]
-  const showIso = [false, false]
+  // serializeState always writes 'd', so without it both isometries start shown.
+  const hasState = params.has('d')
+  const showIso = [!hasState, !hasState]
   for (let i = 0; i < 2; i++) {
     const m = parseMatrixParam(params.get(KEYS[i].m))
     if (m) {

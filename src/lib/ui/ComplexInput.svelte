@@ -42,11 +42,16 @@
     return n.toFixed(precision);
   }
 
+  // Omit a unit coefficient, so ±1 formats as "i"/"-i".
+  function formatImag(n: number) {
+    return Math.abs(n) === 1 ? `${n < 0 ? '-' : ''}i` : `${formatShort(n)}i`
+  }
+
   function toString(z: Complex) {
     if (cIsZero(z)) return `0`
-    if (z.re === 0) return `${formatShort(z.im)}i`
+    if (z.re === 0) return formatImag(z.im)
     if (z.im === 0) return formatShort(z.re)
-    return `${formatShort(z.re)}${z.im >= 0 ? '+' : '-'}${formatShort(Math.abs(z.im))}i`
+    return `${formatShort(z.re)}${z.im >= 0 ? '+' : '-'}${formatImag(Math.abs(z.im))}`
   }
 
   const input = validator<Complex>({
