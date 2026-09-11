@@ -6,11 +6,18 @@ import {
   cnormsq,
   crmul,
   csub,
+  mconjugateTranspose,
+  minv,
+  mmul,
+  mnormalize,
+  qadd,
   qdiv,
   qlerp,
+  qmul,
   qnormsq,
   qToMat3,
   quat,
+  tr,
   vadd,
   vdistsq,
   vec3,
@@ -20,6 +27,7 @@ import {
   vsub,
   type CMat,
   type Complex,
+  type Mat3,
   type Quaternion,
   type Vec3
 } from './math'
@@ -29,12 +37,54 @@ export function mobius(m: CMat): Quaternion {
   return qdiv(quat(m[1].re, m[1].im, m[0].re, m[0].im), quat(m[3].re, m[3].im, m[2].re, m[2].im))
 }
 
+// The action of m on a point q of upper half-space: (aq + b)(cq + d)^-1.
+// mobius(m) is the same as mobiusAt(m, j).
+export function mobiusAt(m: CMat, q: Quaternion): Quaternion {
+  const [a, b, c, d] = m.map(z => quat(z.re, z.im, 0, 0))
+  return qdiv(qadd(qmul(a, q), b), qadd(qmul(c, q), d))
+}
+
 export function toBall(z: Quaternion): Vec3 {
   const n = z.r * z.r + z.i * z.i
   const t = z.j * z.j + z.k * z.k
 
   const norm = n + t + 2 * Math.sqrt(t) + 1
   return vec3((z.r * 2) / norm, (-z.i * 2) / norm, (n + t - 1) / norm)
+}
+
+// Inverse of toBall.
+export function fromBall(v: Vec3): Quaternion {
+  const d = v.x * v.x + v.y * v.y + (1 - v.z) ** 2
+  return quat((2 * v.x) / d, (-2 * v.y) / d, (2 * (1 - v.z)) / d - 1, 0)
+}
+
+export interface BallIsometry {
+  // Row-major.
+  rotation: Mat3
+  translation: Vec3
+}
+
+// Splits the action of m on the ball into a rotation about the origin, followed
+// by the hyperbolic translation along the line through the origin that takes
+// the origin to `translation`. The tree's vertex shader applies this.
+export function ballIsometry(m: CMat): BallIsometry {
+  // Polar decomposition n = p·u. u is unitary, so it fixes j (the origin) and
+  // acts as a rotation. p is positive Hermitian, so it translates along a line
+  // through the origin. With det(n) = 1, p = (n·n* + I) / √(tr(n·n*) + 2).
+  const n = mnormalize(m)
+  const h = mmul(n, mconjugateTranspose(n))
+  const s = 1 / Math.sqrt(tr(h).re + 2)
+  const p: CMat = [crmul(cadd(h[0], complex(1)), s), crmul(h[1], s), crmul(h[2], s), crmul(cadd(h[3], complex(1)), s)]
+  const u = mmul(minv(p), n)
+
+  // A rotation is linear, so each column is twice the image of half an axis.
+  const [c0, c1, c2] = [vec3(0.5, 0, 0), vec3(0, 0.5, 0), vec3(0, 0, 0.5)].map(v =>
+    vrmul(toBall(mobiusAt(u, fromBall(v))), 2)
+  )
+  return {
+    rotation: [c0.x, c1.x, c2.x, c0.y, c1.y, c2.y, c0.z, c1.z, c2.z],
+    translation: toBall(mobius(n)),
+  }
 }
 
 export function toBallCmplx(z: Complex): Vec3 {

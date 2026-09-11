@@ -3,7 +3,7 @@ import { LineMaterial } from 'three/addons/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js'
 import { mEqualPSL, mId, minv, mnormalize, type CMat } from './math/math'
-import { geodesic } from './math/h3-math'
+import { ballIsometry, geodesic } from './math/h3-math'
 import { FloatBuffer } from './utils/floatBuffer'
 import { MAT_EPSILON, packMatrix, VertexTable } from './vertexTable'
 
@@ -44,6 +44,30 @@ export class CayleyTree {
       worldUnits: false
     })
     this.material.onBeforeCompile = (shader) => {
+      // Moves each segment endpoint x to t ⊕ Rx, where R and t come from
+      // ballIsometry and a ⊕ y is the hyperbolic translation taking the origin
+      // to a, applied to y.
+      shader.vertexShader = shader.vertexShader
+        .replace(
+          'void main() {',
+          `
+        uniform mat3 ballRotation;
+        uniform vec3 ballTranslation;
+
+        vec3 ballIsometry( vec3 x ) {
+          vec3 y = ballRotation * x;
+          vec3 a = ballTranslation;
+          float ay = dot( a, y );
+          float aa = dot( a, a );
+          float yy = dot( y, y );
+          return ( ( 1.0 + 2.0 * ay + yy ) * a + ( 1.0 - aa ) * y ) / ( 1.0 + 2.0 * ay + aa * yy );
+        }
+
+        void main() {`
+        )
+        .replace('vec4( instanceStart, 1.0 )', 'vec4( ballIsometry( instanceStart ), 1.0 )')
+        .replace('vec4( instanceEnd, 1.0 )', 'vec4( ballIsometry( instanceEnd ), 1.0 )')
+
       const i = shader.fragmentShader.indexOf('#include <premultiplied_alpha_fragment>')
       const first = shader.fragmentShader.slice(0, i)
       const last = shader.fragmentShader.slice(i)
@@ -66,9 +90,21 @@ export class CayleyTree {
       fadeNear: { value: 0 },
       fadeFar: { value: 0 },
       fadeStrength: { value: 0 },
+      ballRotation: { value: new THREE.Matrix3() },
+      ballTranslation: { value: new THREE.Vector3() },
     })
     this.geometry = new LineSegmentsGeometry()
     this.mesh = new LineSegments2(this.geometry, this.material)
+    // The vertex shader moves points, so the geometry's bounding sphere doesn't
+    // bound what is drawn.
+    this.mesh.frustumCulled = false
+  }
+
+  // Moves the tree by the isometry m in the vertex shader, without rebuilding it.
+  setTransform(m: CMat) {
+    const { rotation, translation } = ballIsometry(m)
+    this.material.uniforms.ballRotation.value.set(...rotation)
+    this.material.uniforms.ballTranslation.value.set(translation.x, translation.y, translation.z)
   }
 
   setUniforms(u: TreeUniforms) {
@@ -77,7 +113,7 @@ export class CayleyTree {
     }
   }
 
-  setGeometry(baseGens: CMat[], colors: THREE.Color[][], depth: number, start: CMat = mId()) {
+  setGeometry(baseGens: CMat[], colors: THREE.Color[][], depth: number) {
     // Each generator g is paired with g^-1 so the traversal can step in either
     // direction. Scaling to det 1 lets vertex matrices be compared up to sign.
     // A generator equal in PSL(2, ℂ) to an earlier one (e.g. g^-1 for an
@@ -101,7 +137,7 @@ export class CayleyTree {
 
     this.#positions.clear()
     this.#colors.clear()
-    this.#traverse(start)
+    this.#traverse()
 
     this.geometry.dispose()
     this.geometry = new LineSegmentsGeometry()
@@ -115,12 +151,12 @@ export class CayleyTree {
   // by a shortest word. Each element is visited once and each edge drawn once.
   // Vertex ids are assigned in discovery order, so each level is a contiguous
   // range of ids and vertices are expanded in id order.
-  #traverse(start: CMat) {
+  #traverse() {
     const vertices = this.#vertices
     const gens = this.generators
     vertices.clear()
 
-    const root = vertices.setCandidate(start)
+    const root = vertices.setCandidate(mId())
     vertices.findOrAdd()
     vertices.gens[root] = -1
     vertices.sizes[root] = 1

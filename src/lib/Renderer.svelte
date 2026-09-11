@@ -33,7 +33,7 @@
   import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js'
   import { FXAAShader } from 'three/addons/shaders/FXAAShader.js'
   import { CayleyTree } from './CayleyTree.svelte'
-  import { mpow, type CMat } from './math/math'
+  import { mId, mpow, type CMat } from './math/math'
   import { getTheme } from '../style/themes/themes.svelte'
 
   let { width, height, depth, gens, rawColors, animateIso }: RendererProps = $props()
@@ -50,13 +50,15 @@
     matShader: THREE.ShaderMaterial
     tree: CayleyTree
     markDirty: () => void
-    updateTree: (gens: CMat[], colors: THREE.Color[][], depth: number, iso?: CMat) => void
+    updateTree: (gens: CMat[], colors: THREE.Color[][], depth: number) => void
   }
   let scene: Scene | undefined = $state()
   let cameraPos: THREE.Vector3 | undefined = $state.raw()
 
+  // Animation moves the tree in the vertex shader, so this only runs when the
+  // group or depth changes.
   $effect(() => {
-    if (scene && !animateIso) scene.updateTree(gens, colors, depth)
+    if (scene) scene.updateTree(gens, colors, depth)
   })
 
   $effect(() => {
@@ -149,8 +151,8 @@
     const tree = new CayleyTree(width, height)
     mainScene.add(tree.mesh)
 
-    const updateTree: Scene['updateTree'] = (gens, colors, depth, iso) => {
-      tree.setGeometry(gens, colors, depth, iso)
+    const updateTree: Scene['updateTree'] = (gens, colors, depth) => {
+      tree.setGeometry(gens, colors, depth)
       markDirty()
     }
 
@@ -168,10 +170,12 @@
       if (animateIso) {
         t = lastTime === undefined ? 0 : (t + (time - lastTime) / 4000) % 1
         lastTime = time
-        updateTree(gens, colors, depth, mpow(animateIso, t))
+        tree.setTransform(mpow(animateIso, t))
         dirty = true
-      } else {
+      } else if (lastTime !== undefined) {
         lastTime = undefined
+        tree.setTransform(mId())
+        dirty = true
       }
 
       if (dirty) {

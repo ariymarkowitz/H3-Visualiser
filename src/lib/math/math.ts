@@ -23,6 +23,10 @@ export function cneg(a: Complex): Complex {
   return complex(-a.re, -a.im)
 }
 
+export function cconj(a: Complex): Complex {
+  return complex(a.re, -a.im)
+}
+
 export function cdot(a: Complex, b: Complex): number {
   return a.re * b.re + a.im * b.im
 }
@@ -102,6 +106,10 @@ export function det(a: CMat): Complex {
 
 export function tr(a: CMat): Complex {
   return cadd(a[0], a[3])
+}
+
+export function mconjugateTranspose(a: CMat): CMat {
+  return [cconj(a[0]), cconj(a[2]), cconj(a[1]), cconj(a[3])]
 }
 
 export function mIsSingular(a: CMat): boolean {
@@ -242,6 +250,19 @@ export function quat(r: number, i: number, j: number, k: number): Quaternion {
 
 export function qnormsq(a: Quaternion) {
   return a.r * a.r + a.i * a.i + a.j * a.j + a.k * a.k
+}
+
+export function qadd(a: Quaternion, b: Quaternion) {
+  return quat(a.r + b.r, a.i + b.i, a.j + b.j, a.k + b.k)
+}
+
+export function qmul(a: Quaternion, b: Quaternion) {
+  return quat(
+    a.r * b.r - a.i * b.i - a.j * b.j - a.k * b.k,
+    a.r * b.i + a.i * b.r + a.j * b.k - a.k * b.j,
+    a.r * b.j - a.i * b.k + a.j * b.r + a.k * b.i,
+    a.r * b.k + a.i * b.j - a.j * b.i + a.k * b.r
+  )
 }
 
 export function qdiv(a: Quaternion, b: Quaternion) {
