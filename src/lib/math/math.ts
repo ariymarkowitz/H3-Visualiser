@@ -152,6 +152,24 @@ export function mIsId(a: CMat, e = 0) {
   return cIsOne(a[0], e) && cIsZero(a[1], e) && cIsZero(a[2], e) && cIsOne(a[3], e)
 }
 
+// Scales a nonsingular matrix to determinant 1.
+export function mnormalize(a: CMat): CMat {
+  const s = csqrt(det(a))
+  return [cdiv(a[0], s), cdiv(a[1], s), cdiv(a[2], s), cdiv(a[3], s)]
+}
+
+// Equality in PSL(2, ℂ), i.e. up to sign. a and b must have the same determinant.
+export function mEqualPSL(a: CMat, b: CMat, e = 0) {
+  let plus = true
+  let minus = true
+  for (let i = 0; i < 4; i++) {
+    const { re, im } = a[i]
+    plus &&= Math.abs(re - b[i].re) <= e && Math.abs(im - b[i].im) <= e
+    minus &&= Math.abs(re + b[i].re) <= e && Math.abs(im + b[i].im) <= e
+  }
+  return plus || minus
+}
+
 export function makedet1(m: CMat, i: number): Complex | undefined {
   if (cIsZero(m[3-i])) return undefined
   // Diagonal (i=0,3): m[i] = (m[1]*m[2] + 1) / m[3-i]
@@ -248,7 +266,10 @@ export function qlerp(a: Vec3, b: Vec3, t: number): Quaternion {
   return quat(Math.cos(half), axis.x * s, axis.y * s, axis.z * s)
 }
 
-export function rotate(a: Vec3, q: Quaternion): Vec3 {
+export type Mat3 = [number, number, number, number, number, number, number, number, number]
+
+// The rotation matrix of a unit quaternion, in row-major order.
+export function qToMat3(q: Quaternion): Mat3 {
   const qii = q.i * q.i
   const qjj = q.j * q.j
   const qkk = q.k * q.k
@@ -258,9 +279,9 @@ export function rotate(a: Vec3, q: Quaternion): Vec3 {
   const qik = q.i * q.k
   const qij = q.i * q.j
   const qjk = q.j * q.k
-  return vec3(
-    a.x * (1 - 2 * (qjj + qkk)) + a.y * 2 * (qij - qrk) + a.z * 2 * (qik + qrj),
-    a.x * 2 * (qij + qrk) + a.y * (1 - 2 * (qii + qkk)) + a.z * 2 * (qjk - qri),
-    a.x * 2 * (qik - qrj) + a.y * 2 * (qjk + qri) + a.z * (1 - 2 * (qii + qjj))
-  )
+  return [
+    1 - 2 * (qjj + qkk), 2 * (qij - qrk), 2 * (qik + qrj),
+    2 * (qij + qrk), 1 - 2 * (qii + qkk), 2 * (qjk - qri),
+    2 * (qik - qrj), 2 * (qjk + qri), 1 - 2 * (qii + qjj),
+  ]
 }

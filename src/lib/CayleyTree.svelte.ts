@@ -2,22 +2,10 @@ import * as THREE from 'three'
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js'
-import {
-  mId,
-  minv,
-  mIsId,
-  mmul,
-  vdist,
-  type CMat,
-  type Quaternion,
-  type Vec3
-} from './math/math'
-import { geodesic, mobius, toBall } from './math/h3-math'
-
-interface TreeData {
-  lineColors: number[]
-  lines: number[]
-}
+import { mEqualPSL, mId, minv, mnormalize, type CMat } from './math/math'
+import { geodesic } from './math/h3-math'
+import { FloatBuffer } from './utils/floatBuffer'
+import { MAT_EPSILON, packMatrix, VertexTable } from './vertexTable'
 
 export interface TreeUniforms {
   fadeColor: number[]
@@ -27,9 +15,12 @@ export interface TreeUniforms {
 }
 
 interface Generator {
-  matrix: CMat
-  // Pre-extracted [r, g, b] so _tree never allocates a THREE.Color per step.
+  // Packed as in VertexTable.
+  matrix: Float64Array
+  // Pre-extracted [r, g, b] so the traversal never allocates a THREE.Color per step.
   color: [number, number, number]
+  // Index of the generator equal to this one's inverse.
+  inverse: number
 }
 
 export class CayleyTree {
@@ -39,6 +30,11 @@ export class CayleyTree {
   generators: Generator[] = []
   depth = 0
   minSize = 0.015
+
+  // Kept across rebuilds so animation frames reuse their memory.
+  #vertices = new VertexTable()
+  #positions = new FloatBuffer()
+  #colors = new FloatBuffer()
 
   constructor(width: number, height: number) {
     this.material = new LineMaterial({
@@ -82,63 +78,98 @@ export class CayleyTree {
   }
 
   setGeometry(baseGens: CMat[], colors: THREE.Color[][], depth: number, start: CMat = mId()) {
-    // Each generator g is paired with g^-1 so traverse can step in either direction.
-    this.generators = baseGens.flatMap((g, k): Generator[] => {
+    // Each generator g is paired with g^-1 so the traversal can step in either
+    // direction. Scaling to det 1 lets vertex matrices be compared up to sign.
+    // A generator equal in PSL(2, ℂ) to an earlier one (e.g. g^-1 for an
+    // involution g) would draw the same edges again, so it is dropped.
+    const matrices: CMat[] = []
+    this.generators = []
+    baseGens.forEach((g, k) => {
+      const m = mnormalize(g)
       const [c, ci] = colors[k]
-      return [
-        { matrix: g, color: [c.r, c.g, c.b] },
-        { matrix: minv(g), color: [ci.r, ci.g, ci.b] },
-      ]
+      for (const [matrix, color] of [[m, c], [minv(m), ci]] as const) {
+        if (matrices.some(h => mEqualPSL(h, matrix, MAT_EPSILON))) continue
+        matrices.push(matrix)
+        this.generators.push({ matrix: packMatrix(matrix), color: [color.r, color.g, color.b], inverse: -1 })
+      }
+    })
+    this.generators.forEach((gen, i) => {
+      const inv = minv(matrices[i])
+      gen.inverse = matrices.findIndex(h => mEqualPSL(h, inv, MAT_EPSILON))
     })
     this.depth = depth
 
-    const data: TreeData = {
-      lineColors: [],
-      lines: []
-    }
-    const startQuat = mobius(start)
-    this.#traverse(0, 1, undefined, startQuat, start, toBall(startQuat), data)
+    this.#positions.clear()
+    this.#colors.clear()
+    this.#traverse(start)
 
     this.geometry.dispose()
     this.geometry = new LineSegmentsGeometry()
 
-    this.geometry.setPositions(data.lines)
-    this.geometry.setColors(data.lineColors)
+    this.geometry.setPositions(this.#positions.toArray())
+    this.geometry.setColors(this.#colors.toArray())
     this.mesh.geometry = this.geometry
   }
 
-  #traverse(
-    depth: number,
-    edgeSize: number,
-    genN: number | undefined,
-    q: Quaternion,
-    mat: CMat,
-    p: Vec3,
-    state: TreeData
-  ) {
-    if (depth >= this.depth || edgeSize < this.minSize) return
-    if (depth > 0 && mIsId(mat, 1e-4)) return
+  // Breadth-first search over group elements, so each element is first reached
+  // by a shortest word. Each element is visited once and each edge drawn once.
+  // Vertex ids are assigned in discovery order, so each level is a contiguous
+  // range of ids and vertices are expanded in id order.
+  #traverse(start: CMat) {
+    const vertices = this.#vertices
+    const gens = this.generators
+    vertices.clear()
 
-    for (let gi = 0; gi < this.generators.length; gi++) {
-      // Skip g^-1 immediately after stepping along g.
-      if ((gi ^ 1) === genN) continue
+    const root = vertices.setCandidate(start)
+    vertices.findOrAdd()
+    vertices.gens[root] = -1
+    vertices.sizes[root] = 1
 
-      const gen = this.generators[gi]
-      const newMat = mmul(mat, gen.matrix)
-      const newQuat = mobius(newMat)
-      const newVertex = toBall(newQuat)
+    let levelStart = 0
+    for (let d = 0; d < this.depth && levelStart < vertices.count; d++) {
+      const levelEnd = vertices.count
+      for (let v = levelStart; v < levelEnd; v++) {
+        if (vertices.sizes[v] < this.minSize) continue
+        const parentGen = vertices.gens[v]
 
-      const childSize = vdist(p, newVertex)
-      const subdivisions = Math.floor(Math.min(Math.max(childSize * 100, 2), 10))
+        for (let gi = 0; gi < gens.length; gi++) {
+          // Stepping back to the parent would find it already expanded.
+          if (parentGen >= 0 && gens[parentGen].inverse === gi) continue
 
-      const [r, g, b] = gen.color
-      for (let li = 0; li < subdivisions * 2 - 2; li++) {
-        state.lineColors.push(r, g, b)
+          const n = vertices.setCandidateProduct(v, gens[gi].matrix)
+          const size = vertices.distance(v, n)
+          const w = vertices.findOrAdd()
+          if (w === n) {
+            vertices.gens[n] = gi
+            vertices.sizes[n] = size
+          } else if (w <= v) {
+            // w was expanded before v and drew this edge then.
+            continue
+          } else {
+            // w is not expanded yet, so a longer edge can still save it from pruning.
+            vertices.sizes[w] = Math.max(vertices.sizes[w], size)
+          }
+
+          // The candidate at n is still intact, whether or not it was kept.
+          this.#pushEdge(v, n, size, gens[gi].color)
+        }
       }
-      geodesic(q, newQuat, subdivisions, state.lines)
-
-      this.#traverse(depth + 1, childSize, gi, newQuat, newMat, newVertex, state)
+      levelStart = levelEnd
     }
+  }
+
+  #pushEdge(from: number, to: number, size: number, [r, g, b]: Generator['color']) {
+    const subdivisions = Math.floor(Math.min(Math.max(size * 100, 2), 10))
+    const count = 6 * (subdivisions - 1)
+    const colors = this.#colors
+    const arr = colors.reserve(count)
+    for (let i = colors.length; i < colors.length + count; i += 3) {
+      arr[i] = r
+      arr[i + 1] = g
+      arr[i + 2] = b
+    }
+    colors.length += count
+    geodesic(this.#vertices.quat(from), this.#vertices.quat(to), subdivisions, this.#positions)
   }
 
   dispose() {

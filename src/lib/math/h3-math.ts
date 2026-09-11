@@ -9,8 +9,8 @@ import {
   qdiv,
   qlerp,
   qnormsq,
+  qToMat3,
   quat,
-  rotate,
   vadd,
   vdistsq,
   vec3,
@@ -23,6 +23,7 @@ import {
   type Quaternion,
   type Vec3
 } from './math'
+import type { FloatBuffer } from '../utils/floatBuffer'
 
 export function mobius(m: CMat): Quaternion {
   return qdiv(quat(m[1].re, m[1].im, m[0].re, m[0].im), quat(m[3].re, m[3].im, m[2].re, m[2].im))
@@ -62,17 +63,16 @@ export function endsOfGeodesic(a: Quaternion, b: Quaternion): [Complex, Complex]
   return [end1, end2]
 }
 
-// Polyline endpoint: emitted once.
-function pushEndpoint(arr: number[], v: Vec3) {
-  arr.push(v.x, v.y, v.z)
+function writePoint(arr: Float32Array, i: number, x: number, y: number, z: number): number {
+  arr[i] = x
+  arr[i + 1] = y
+  arr[i + 2] = z
+  return i + 3
 }
 
-// Interior vertex shared by two line segments: emitted twice.
-function pushJoint(arr: number[], v: Vec3) {
-  arr.push(v.x, v.y, v.z, v.x, v.y, v.z)
-}
-
-export function geodesic(a: Quaternion, b: Quaternion, divisions: number, arr: number[]): void {
+// Appends the geodesic from a to b to `out` as divisions - 1 line segments,
+// each written as its two endpoints.
+export function geodesic(a: Quaternion, b: Quaternion, divisions: number, out: FloatBuffer): void {
   const p1 = toBall(a)
   const p2 = toBall(b)
 
@@ -89,22 +89,46 @@ export function geodesic(a: Quaternion, b: Quaternion, divisions: number, arr: n
   const scale = vnormsq(x) + vnormsq(y)
   const isStraight = isNaN(midNormSq) || midNormSq < 1e-10 * scale
 
-  pushEndpoint(arr, p1)
+  const segments = divisions - 1
+  const arr = out.reserve(6 * segments)
+  let i = out.length
+  // End of the previous segment.
+  let px = p1.x
+  let py = p1.y
+  let pz = p1.z
   if (isStraight) {
-    const step = vrmul(vsub(p2, p1), 1 / (divisions - 1))
-    let current = p1
-    for (let i = 1; i < divisions - 1; i++) {
-      current = vadd(current, step)
-      pushJoint(arr, current)
+    const step = vrmul(vsub(p2, p1), 1 / segments)
+    for (let s = 1; s < segments; s++) {
+      i = writePoint(arr, i, px, py, pz)
+      px += step.x
+      py += step.y
+      pz += step.z
+      i = writePoint(arr, i, px, py, pz)
     }
   } else {
     const center = vrmul(mid, (1 + vdistsq(x, y) / midNormSq) / 2)
-    const interp = qlerp(vnormalize(vsub(p1, center)), vnormalize(vsub(p2, center)), 1 / (divisions - 1))
-    let current = vsub(p1, center)
-    for (let i = 1; i < divisions - 1; i++) {
-      current = rotate(current, interp)
-      pushJoint(arr, vadd(current, center))
+    const [m00, m01, m02, m10, m11, m12, m20, m21, m22] = qToMat3(
+      qlerp(vnormalize(vsub(p1, center)), vnormalize(vsub(p2, center)), 1 / segments)
+    )
+    // Offset from the center, rotated one step per segment.
+    let ux = p1.x - center.x
+    let uy = p1.y - center.y
+    let uz = p1.z - center.z
+    for (let s = 1; s < segments; s++) {
+      i = writePoint(arr, i, px, py, pz)
+      const rx = ux * m00 + uy * m01 + uz * m02
+      const ry = ux * m10 + uy * m11 + uz * m12
+      const rz = ux * m20 + uy * m21 + uz * m22
+      ux = rx
+      uy = ry
+      uz = rz
+      px = ux + center.x
+      py = uy + center.y
+      pz = uz + center.z
+      i = writePoint(arr, i, px, py, pz)
     }
   }
-  pushEndpoint(arr, p2)
+  i = writePoint(arr, i, px, py, pz)
+  i = writePoint(arr, i, p2.x, p2.y, p2.z)
+  out.length = i
 }

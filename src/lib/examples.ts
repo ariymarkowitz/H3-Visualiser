@@ -58,12 +58,12 @@ export const examples: Example[] = [
     [c(1, -1), c(1), c(1), c(1, 1)],
   ]),
   // Riley's representation, with ρ a root of ρ² - ρ + 1.
-  example('Figure-eight knot group', 8, [
+  example('Figure-eight knot group', 10, [
     [c(1), c(1), c(0), c(1)],
     [c(1), c(0), c(0.5, -s3), c(1)],
   ]),
   // Commuting parabolics: the orbit lies on a horosphere.
-  example('Parabolic ℤ²', 6, [
+  example('Parabolic ℤ²', 10, [
     [c(1), c(1), c(0), c(1)],
     [c(1), c(0, 1), c(0), c(1)],
   ]),

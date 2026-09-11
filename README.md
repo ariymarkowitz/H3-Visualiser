@@ -12,7 +12,7 @@ PSL(2, ℂ) (the group of 2x2 invertible complex matrices, up to scaling) has a 
 
 ## How to use the visualiser
 
-- The 'Depth' input controls the maximum depth of the graph (the length of the largest path from the origin). Warning: Dense groups will take a long time to render at high depth and may cause lag or crash the page. Graphs with cycles will render duplicate vertices, also causing lag.
+- The 'Depth' input controls the maximum depth of the graph (the length of the largest path from the origin). Warning: Dense groups will take a long time to render at high depth and may cause lag or crash the page. Each group element is only drawn once, so a group with lots of relations should render fine at high depth.
 
 - The matrix inputs 'Isometry 1' and 'Isometry 2' control the generators of the group. Each entry can be an integer, decimal, imaginary, or complex number (eg. '-1.29', '1 - 1.4i').
 
