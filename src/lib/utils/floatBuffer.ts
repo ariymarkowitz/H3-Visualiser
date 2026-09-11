@@ -1,8 +1,13 @@
-// A Float32Array that grows as values are appended. Keeping one across
+// A Float32Array that grows as values are appended, doubling its capacity so
+// the capacity stays a multiple of the initial one. Keeping one across
 // rebuilds means its memory is only allocated once.
 export class FloatBuffer {
-  data = new Float32Array(1 << 16)
+  data: Float32Array
   length = 0
+
+  constructor(capacity: number) {
+    this.data = new Float32Array(capacity)
+  }
 
   clear() {
     this.length = 0
@@ -20,10 +25,5 @@ export class FloatBuffer {
       this.data = data
     }
     return this.data
-  }
-
-  // A copy of the values written so far.
-  toArray(): Float32Array {
-    return this.data.slice(0, this.length)
   }
 }

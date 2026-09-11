@@ -14,6 +14,16 @@ export interface TreeUniforms {
   fadeStrength: number
 }
 
+// Each segment is 6 values in both the position and color buffers.
+const INITIAL_SEGMENTS = 1 << 14
+
+// Queues the first `length` values of a buffer for upload to the GPU.
+function markWritten(buffer: THREE.InterleavedBuffer, length: number) {
+  if (length === 0) return
+  buffer.addUpdateRange(0, length)
+  buffer.needsUpdate = true
+}
+
 interface Generator {
   // Packed as in VertexTable.
   matrix: Float64Array
@@ -31,10 +41,11 @@ export class CayleyTree {
   depth = 0
   minSize = 0.015
 
-  // Kept across rebuilds so animation frames reuse their memory.
+  // Kept across rebuilds so they reuse their memory. The geometry's GPU buffers
+  // are built on the position and color arrays.
   #vertices = new VertexTable()
-  #positions = new FloatBuffer()
-  #colors = new FloatBuffer()
+  #positions = new FloatBuffer(6 * INITIAL_SEGMENTS)
+  #colors = new FloatBuffer(6 * INITIAL_SEGMENTS)
 
   constructor(width: number, height: number) {
     this.material = new LineMaterial({
@@ -93,7 +104,7 @@ export class CayleyTree {
       ballRotation: { value: new THREE.Matrix3() },
       ballTranslation: { value: new THREE.Vector3() },
     })
-    this.geometry = new LineSegmentsGeometry()
+    this.geometry = this.#createGeometry()
     this.mesh = new LineSegments2(this.geometry, this.material)
     // The vertex shader moves points, so the geometry's bounding sphere doesn't
     // bound what is drawn.
@@ -139,12 +150,38 @@ export class CayleyTree {
     this.#colors.clear()
     this.#traverse()
 
-    this.geometry.dispose()
-    this.geometry = new LineSegmentsGeometry()
+    // A GPU buffer can't be resized, so if either array grew, the geometry is
+    // recreated on the new arrays. Otherwise only the written part is uploaded.
+    const positionBuffer = this.#interleavedBuffer('instanceStart')
+    const colorBuffer = this.#interleavedBuffer('instanceColorStart')
+    if (positionBuffer.array !== this.#positions.data || colorBuffer.array !== this.#colors.data) {
+      this.geometry.dispose()
+      this.geometry = this.#createGeometry()
+      this.mesh.geometry = this.geometry
+    } else {
+      markWritten(positionBuffer, this.#positions.length)
+      markWritten(colorBuffer, this.#colors.length)
+    }
+    this.geometry.instanceCount = this.#positions.length / 6
+  }
 
-    this.geometry.setPositions(this.#positions.toArray())
-    this.geometry.setColors(this.#colors.toArray())
-    this.mesh.geometry = this.geometry
+  // A geometry whose GPU buffers are built on the whole position and color arrays.
+  #createGeometry(): LineSegmentsGeometry {
+    const geometry = new LineSegmentsGeometry()
+    for (const [data, start, end] of [
+      [this.#positions.data, 'instanceStart', 'instanceEnd'],
+      [this.#colors.data, 'instanceColorStart', 'instanceColorEnd'],
+    ] as const) {
+      const buffer = new THREE.InstancedInterleavedBuffer(data, 6, 1).setUsage(THREE.DynamicDrawUsage)
+      geometry.setAttribute(start, new THREE.InterleavedBufferAttribute(buffer, 3, 0))
+      geometry.setAttribute(end, new THREE.InterleavedBufferAttribute(buffer, 3, 3))
+    }
+    geometry.instanceCount = 0
+    return geometry
+  }
+
+  #interleavedBuffer(name: string): THREE.InterleavedBuffer {
+    return (this.geometry.getAttribute(name) as THREE.InterleavedBufferAttribute).data
   }
 
   // Breadth-first search over group elements, so each element is first reached
