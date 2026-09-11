@@ -137,7 +137,6 @@ main {
   display: flex;
   justify-content: center;
   flex-direction: row;
-  gap: 0px 10px;
 
   @media screen and (max-width: 600px) {
     flex-direction: column;
@@ -158,10 +157,11 @@ main {
   display: flex;
   flex-direction: column;
   gap: 1em;
-  margin: 10px 10px 0 0;
+  margin: 10px 20px 10px 10px;
 
   @media screen and (max-width: 600px) {
-    width: 100%;
+    width: auto;
+    margin-right: 10px;
   }
 }
 
